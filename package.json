@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@stoqey/ib": "^1.1.31",
-    "@waytrade/microservice-core": "^0.1.3",
+    "@waytrade/microservice-core": "^0.1.4",
     "rxjs": "^6.6.7"
   },
   "devDependencies": {

@@ -868,10 +868,10 @@
     "@typescript-eslint/types" "4.20.0"
     eslint-visitor-keys "^2.0.0"
 
-"@waytrade/microservice-core@^0.1.3":
-  version "0.1.3"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.1.3/6812c9e985ceba02a858fc2b168c0c76815dd1aad4edd66e12a4245d568479bb#39cf3738ca7ac4ec22d21fb3ad247a0e4e69ad84"
-  integrity sha512-W8Sk2DRMx4SvpXoI8jGlygoUfwB1t6HMj2r0x36EWdRkQMZUUh1ZbYrfm+NDtEeJ1Rj5qLKCdEWTy28Sw3L/Vw==
+"@waytrade/microservice-core@^0.1.4":
+  version "0.1.4"
+  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.1.4/d0b27ab845a4351f0534ca44d7ec8de9637cb47e85cd2f653378d807977c89de#e4bab9630106e22573e64ac6a04783aff1ac27b6"
+  integrity sha512-EDud71yB7u1umkLYh3JttZv2sVB/7sww/7mRLR6bBccQfH5lH9XJjf4uZ0F0EVv5YmPfdzV5QtqjhwWKWbXDHw==
   dependencies:
     axios "^0.21.1"
     dotenv "^8.2.0"
