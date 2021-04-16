@@ -1,3 +1,7 @@
-# sauron-ib-api
+# ib-api
 
-![Package Build / Publish](https://github.com/mfrener/sauron-ib-api/actions/workflows/publish.yml/badge.svg)
+[![Test and Publish](https://github.com/waytrade/ib-api/actions/workflows/test_publish.yml/badge.svg)](https://github.com/waytrade/ib-api/actions/workflows/test_publish.yml)
+
+## Installation
+
+    $ yarn add @waytrade/ib-api
