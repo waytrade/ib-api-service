@@ -1,0 +1,8 @@
+{
+  "SERVER_PORT": 3001,
+  "SERVER_HOST": "localhost",
+  "LOG_LEVEL": "debug",
+  "IB_API_PORT": 4002,
+  "IB_API_HOST": "localhost",
+  "BASE_CURRENCY": "EUR"
+}

@@ -1,0 +1,8 @@
+__tests__/
+node_modules/
+dist/
+api/
+coverage/
+.eslintrc.js
+*.test.ts
+jest.config.js
