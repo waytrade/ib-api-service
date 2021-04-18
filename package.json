@@ -1,20 +1,17 @@
 {
-  "name": "@waytrade/ib-api",
+  "name": "@waytrade/ib-api-service",
   "version": "0.1.3",
   "description": "Interactive Brokers API Service",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "author": "Matthias Frener <matthias.frener@gmx.net>",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/waytrade/ib-api.git"
+    "url": "https://github.com/waytrade/ib-api-service.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/@waytrade"
   },
   "files": [
-    "dist/",
     "openapi.json"
   ],
   "scripts": {
@@ -34,8 +31,7 @@
     "export-openapi": "node ./dist/run.js -write-openapi",
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
-    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
-    "docker": "docker build --rm --pull -f \"C:/srcmfr/saruons-ai/sauron-ib-api/Dockerfile\" -t \"sauron-ib-api:latest\" \"C:\\srcmfr\\saruons-ai\\sauron-ib-api\""
+    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test"
   },
   "engines": {
     "node": ">=14.15.4"

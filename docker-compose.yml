@@ -25,4 +25,4 @@ services:
       IB_GATEWAY_HOST: ${IB_GATEWAY_HOST:-ib-gateway}
       NODE_ENV: production
     ports:
-      - 3001:3000
+      - 3000:3000
