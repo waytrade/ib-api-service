@@ -5,8 +5,8 @@ services:
     image: docker.pkg.github.com/mfrener/ib-gateway-docker-headless/ib-gateway:latest
     restart: always
     environment:
-      TWSUSERID: ${TWSUSERID}
-      TWSPASSWORD: ${TWSPASSWORD}
+      TWSUSERID: ${TWS_USERID}
+      TWSPASSWORD: ${TWS_PASSWORD}
       TRADING_MODE: ${TRADING_MODE:-live}
     ports:
       - 4003
@@ -21,8 +21,9 @@ services:
     depends_on:
       - ib-gateway
     environment:
-      IB_GATEWAY_PORT: ${IB_GATEWAY_PORT:-4003}
-      IB_GATEWAY_HOST: ${IB_GATEWAY_HOST:-ib-gateway}
+      IB_GATEWAY_PORT: 4003
+      IB_GATEWAY_HOST: ib-gateway
+      DOCKER_TRADING_MODE: ${TRADING_MODE:-live}
       NODE_ENV: production
     ports:
       - 3000:3000

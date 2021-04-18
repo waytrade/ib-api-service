@@ -15,4 +15,7 @@ export interface IBApiServiceConfig extends MicroserviceConfig {
    * Multiple linked accounts with different base currency are not supported (yet?).
    */
   BASE_CURRENCY?: string;
+
+  /** The trading mode. Used on docker to switch port when in paper trading mode. */
+  DOCKER_TRADING_MODE?: string;
 }

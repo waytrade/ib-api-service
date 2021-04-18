@@ -27,7 +27,15 @@ export class IBApiApp extends MicroserviceApp {
 
   /** Called when the context has booted, before the API service is started. */
   async onBoot(): Promise<void> {
-    return;
+    // increase port for paper trading mode in docker
+    if (IBApiApp.config.DOCKER_TRADING_MODE === "paper") {
+      IBApiApp.config.IB_GATEWAY_PORT =
+        IBApiApp.config.IB_GATEWAY_PORT !== undefined
+          ? Number(IBApiApp.config.IB_GATEWAY_PORT) + 1
+          : undefined;
+    }
+    IBApiApp.info(`IB Gateway host: ${IBApiApp.config.IB_GATEWAY_HOST}`);
+    IBApiApp.info(`IB Gateway port: ${IBApiApp.config.IB_GATEWAY_PORT}`);
   }
 
   /** Called when the microservice has been started. */

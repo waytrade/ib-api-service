@@ -1,8 +1,6 @@
 {
   "SERVER_PORT": 3000,
   "SERVER_HOST": "localhost",
-  "LOG_LEVEL": "debug",
-  "IB_GATEWAY_PORT": 4001,
-  "IB_GATEWAY_HOST": "localhost",
+  "LOG_LEVEL": "info",
   "BASE_CURRENCY": "EUR"
 }
