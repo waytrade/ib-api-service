@@ -37,8 +37,8 @@
     "node": ">=14.15.4"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.1.31",
-    "@waytrade/microservice-core": "^0.1.4",
+    "@stoqey/ib": "^1.1.34",
+    "@waytrade/microservice-core": "^0.1.10",
     "rxjs": "^6.6.7"
   },
   "devDependencies": {

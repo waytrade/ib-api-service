@@ -627,10 +627,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@stoqey/ib@^1.1.31":
-  version "1.1.31"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.31.tgz#36d96d08c9ade2966a47e10d32f9982b7b239072"
-  integrity sha512-bF1gwMHzTjnLRjE98WZvkCvXsWA1qUTqMhKNlvGtL4FtbZlNIRlOt6qZDrb1RA9GM+giZ/n4by+lQfwP50NLiQ==
+"@stoqey/ib@^1.1.34":
+  version "1.1.34"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.34.tgz#ea493caed8b873c5fa997755d8ab90c043295b76"
+  integrity sha512-EqEothPNM4bxv4vB2zyqwl8/OGpvLnAOJ8AN1PiaVLUVAYBWH2RLJOH2LSaEmuy9MU15zMGMi3MRhy0EQMJSZg==
   dependencies:
     "@typescript-eslint/eslint-plugin" "^4.10.0"
     "@typescript-eslint/parser" "^4.10.0"
@@ -868,10 +868,10 @@
     "@typescript-eslint/types" "4.20.0"
     eslint-visitor-keys "^2.0.0"
 
-"@waytrade/microservice-core@^0.1.4":
-  version "0.1.4"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.1.4/d0b27ab845a4351f0534ca44d7ec8de9637cb47e85cd2f653378d807977c89de#e4bab9630106e22573e64ac6a04783aff1ac27b6"
-  integrity sha512-EDud71yB7u1umkLYh3JttZv2sVB/7sww/7mRLR6bBccQfH5lH9XJjf4uZ0F0EVv5YmPfdzV5QtqjhwWKWbXDHw==
+"@waytrade/microservice-core@^0.1.10":
+  version "0.1.10"
+  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.1.10/34f2a6722898d478495fb451226b21dbd377e5b0a3d1ff02b46bc9a905aed52e#2b01ba84c1b7e3c8abf4419745f7aca9880f22fa"
+  integrity sha512-fq4DRrvZIl4MhoyJkXPpVT3gEbcANayUDf4FB3S7WHcxvmW0JhRE4JiSrGMu4v4YPYW//kmQBKd/syZY6bUavQ==
   dependencies:
     axios "^0.21.1"
     dotenv "^8.2.0"
