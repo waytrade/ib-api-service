@@ -32,7 +32,7 @@
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
     "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
-    "docker": ""
+    "docker:up": "docker-compose up"
   },
   "engines": {
     "node": ">=14.15.4"
