@@ -2,5 +2,6 @@
   "SERVER_PORT": 3000,
   "SERVER_HOST": "localhost",
   "LOG_LEVEL": "info",
+  "IB_GATEWAY_HOST": "localhost",
   "BASE_CURRENCY": "EUR"
 }

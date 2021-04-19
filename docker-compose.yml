@@ -1,29 +1,15 @@
 version: "3.4"
 
 services:
-  ib-gateway:
-    image: docker.pkg.github.com/mfrener/ib-gateway-docker-headless/ib-gateway:latest
-    restart: always
-    environment:
-      TWSUSERID: ${TWS_USERID}
-      TWSPASSWORD: ${TWS_PASSWORD}
-      TRADING_MODE: ${TRADING_MODE:-live}
-    ports:
-      - 4003
-      - 4004
   ib-api-service:
     container_name: ib-api-service
     build:
       context: .
       dockerfile: ./Dockerfile
-    links:
-      - ib-gateway
-    depends_on:
-      - ib-gateway
     environment:
-      IB_GATEWAY_PORT: 4003
-      IB_GATEWAY_HOST: ib-gateway
-      DOCKER_TRADING_MODE: ${TRADING_MODE:-live}
+      TWSUSERID: ${TWS_USERID}
+      TWSPASSWORD: ${TWS_PASSWORD}
+      TRADING_MODE: ${TRADING_MODE:-live}
       NODE_ENV: production
     ports:
       - 3000:3000

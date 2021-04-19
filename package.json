@@ -31,7 +31,8 @@
     "export-openapi": "node ./dist/run.js -write-openapi",
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
-    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test"
+    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
+    "docker": ""
   },
   "engines": {
     "node": ">=14.15.4"

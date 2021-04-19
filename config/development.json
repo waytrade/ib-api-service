@@ -1,6 +1,4 @@
 {
   "SERVER_PORT": 3002,
-  "LOG_LEVEL": "debug",
-  "IB_GATEWAY_PORT": 4002,
-  "IB_GATEWAY_HOST": "localhost"
+  "LOG_LEVEL": "debug"
 }
