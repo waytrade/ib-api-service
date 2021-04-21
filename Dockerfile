@@ -59,5 +59,5 @@ RUN chmod a+x ./run.sh
 
 ENV DISPLAY :1
 ENV NODE_ENV production
-EXPOSE 3000
+EXPOSE 3002
 CMD ["/root/run.sh"]

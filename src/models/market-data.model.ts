@@ -392,6 +392,12 @@ export class MarketDataUpdate {
  */
 @model("A Webhook callback subscription on market data.")
 export class MarketDataCallbackSubscription {
+  /**The hostname of the callback server. */
+  @property(
+    "The hostname of the callback server. The connection peer address will be used if not specified.",
+  )
+  host?: string;
+
   /**The port number of the callback server. */
   @property("The port number of the callback server.")
   port?: number;

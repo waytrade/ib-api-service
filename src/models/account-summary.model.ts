@@ -99,6 +99,12 @@ export class AccountSummariesUpdate {
  */
 @model("A Webhook callback subscription on account summaries.")
 export class AccountSummaryCallbackSubscription {
+  /**The hostname of the callback server. */
+  @property(
+    "The hostname of the callback server. The connection peer address will be used if not specified.",
+  )
+  host?: string;
+
   /**The port number of the callback server. */
   @property("The port number of the callback server.")
   port?: number;

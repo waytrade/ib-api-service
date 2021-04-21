@@ -12,4 +12,4 @@ services:
       TRADING_MODE: ${TRADING_MODE:-live}
       NODE_ENV: production
     ports:
-      - 3002:3000
+      - 3002:3002

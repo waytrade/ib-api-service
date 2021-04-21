@@ -1,5 +1,5 @@
 {
-  "SERVER_PORT": 3000,
+  "SERVER_PORT": 3002,
   "SERVER_HOST": "localhost",
   "LOG_LEVEL": "info",
   "IB_GATEWAY_HOST": "localhost",

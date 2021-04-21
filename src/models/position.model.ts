@@ -65,6 +65,12 @@ export class PositionsUpdate {
  */
 @model("A Webhook callback subscription on the positions.")
 export class PositionsCallbackSubscription {
+  /**The hostname of the callback server. */
+  @property(
+    "The hostname of the callback server. The connection peer address will be used if not specified.",
+  )
+  host?: string;
+
   /**The port number of the callback server. */
   @property("The port number of the callback server.")
   port?: number;

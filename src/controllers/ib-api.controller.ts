@@ -146,7 +146,7 @@ export class IBApiController {
     // add callback subscription
 
     const newHookAdded = this.accountSummaryHooks.add(
-      request.remoteAddress,
+      params.host ?? request.remoteAddress,
       params.port,
       params.callbackUrl,
       params.instanceId,
@@ -185,7 +185,7 @@ export class IBApiController {
     // add webhook
 
     const newHookAdded = this.positionsHooks.add(
-      request.remoteAddress,
+      params.host ?? request.remoteAddress,
       params.port,
       params.callbackUrl,
       params.instanceId,
@@ -265,7 +265,7 @@ export class IBApiController {
     // add webhook
 
     const newHookAdded = this.marketDataHooks.add(
-      request.remoteAddress,
+      params.host ?? request.remoteAddress,
       params.port,
       params.callbackUrl,
       params.instanceId + params.conId,
