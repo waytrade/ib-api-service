@@ -356,6 +356,9 @@ export class IBApiService {
               const pnl$ = this.api
                 ?.getPnLSingle(pos.account, "", pos.contract.conId)
                 .subscribe({
+                  error: (error: IB.IBApiNextError) => {
+                    IBApiApp.error("getPnLSingle: " + error.error.message);
+                  },
                   next: pnl => {
                     const changed: Position = {id: id};
                     changed.marketValue = pnl.marketValue;
@@ -394,6 +397,9 @@ export class IBApiService {
                 ?.getMarketData(details.contract, "", false, false)
                 .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
                 .subscribe({
+                  error: (error: IB.IBApiNextError) => {
+                    IBApiApp.error("getPnLSingle: " + error.error.message);
+                  },
                   next: update => {
                     const changed: MarketData = {};
                     this.updateMarketData(latest, update.all, changed);
