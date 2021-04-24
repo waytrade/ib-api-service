@@ -1,9 +1,8 @@
-# Install Linux tools and libs
+FROM waytrade/microservice-core:latest
 
-FROM ubuntu:20.04
-RUN apt-get update -y && \apt-get install --no-install-recommends --yes \
-  curl \
-  ca-certificates \
+# Install Linux Tools and Libs
+
+RUN apt-get install --no-install-recommends --yes \
   unzip \
   xvfb \
   libxslt-dev \
@@ -11,12 +10,6 @@ RUN apt-get update -y && \apt-get install --no-install-recommends --yes \
   libxtst6 \
   libxi6 \
   libgtk2.0-bin
-
-# Install node.js and yarn
-
-RUN curl -sSL https://deb.nodesource.com/setup_14.x | bash \
-  && apt-get install -y nodejs
-RUN npm install --global yarn
 
 # Install IB Gateway
 
@@ -41,6 +34,7 @@ ENV IBC_INI /opt/ibc/config.ini
 ENV TWOFA_TIMEOUT_ACTION exit
 
 # Install App
+
 WORKDIR /usr/src/app
 COPY ./package*.json ./
 COPY ./yarn.lock ./
