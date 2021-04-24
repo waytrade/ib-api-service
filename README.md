@@ -21,9 +21,9 @@
 ### node package
 
     $ yarn add @waytrade/ib-api-service
-    
-    or
-    
+
+update:
+
     $ yarn upgrade @waytrade/ib-api-service@^
 
 ### docker-compose.yml:
