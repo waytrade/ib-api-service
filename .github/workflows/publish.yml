@@ -26,6 +26,9 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: "@waytrade"
           always-auth: true
+
+      # Install openapitools/openapi-generator-cli
+      - name: "Install OpenAPI Tools"
         run: npm install --global @openapitools/openapi-generator-cli
 
       # Install packages with yarn
