@@ -4,23 +4,27 @@
 
 ## Preparation
 
-$ yarn global add @openapitools/openapi-generator-cli
+    $ yarn global add @openapitools/openapi-generator-cli
 
 ## Build and run
 
-$ yarn install
-$ yarn build
-$ yarn start
+    $ yarn install
+    $ yarn build
+    $ yarn start
 
 ## Prepare for release (lint, test and validate OpenAPI)
 
-$ yarn release
+    $ yarn release
 
 ## Usage
 
 ### node package
 
-$ yarn add @waytrade/ib-api-service
+    $ yarn add @waytrade/ib-api-service
+    
+    or
+    
+    $ yarn upgrade @waytrade/ib-api-service@^
 
 ### docker-compose.yml:
 
