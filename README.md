@@ -2,6 +2,10 @@
 
 [![Test and Publish](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml)
 
+Implements a REST / Webhook API Server on top of https://github.com/stoqey/ib
+
+We use this app as part of our microservice ecosystem and it is OSS so you don't need to write it again. No questions will be answered, no support will be given, no feature-request will be accepted. Use it - or fork it and roll your own :)
+
 ## Preparation
 
     $ yarn global add @openapitools/openapi-generator-cli
@@ -42,7 +46,7 @@ and generate your client code, like:
 
 ```
 ib-api-service:
-  image: docker.pkg.github.com/waytrade/ib-api-service/ib-api-service:latest
+  image: waytrade/ib-api-service
   restart: always
   environment:
     SERVER_PORT: 3002
