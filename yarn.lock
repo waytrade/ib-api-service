@@ -574,10 +574,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@stoqey/ib@^1.1.39":
-  version "1.1.39"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.39.tgz#9892a10e9ccca8aa9a5ee3a7aa7d179784aeca06"
-  integrity sha512-0m28Qgy0IyZs1TQRhVPIbXkpkCkWlaZKIkl7QZpr9SbN8q9yeap73GExQvEHmZulp4bGlL8tiNSDkRnP0yZntw==
+"@stoqey/ib@^1.1.40":
+  version "1.1.40"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.40.tgz#8a2dd00dade25b03a5cee8a5d85b75ede44ca231"
+  integrity sha512-7p3EMF1D19Gl2cQzt+r5exJKhj7mfrKvDOUnLq3anhcOvnAI4ZWJ4y0FKqxbwtkgFyqajWX1y/tTG8RQwgGpCw==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"
@@ -803,10 +803,10 @@
     "@typescript-eslint/types" "4.20.0"
     eslint-visitor-keys "^2.0.0"
 
-"@waytrade/microservice-core@^0.1.12":
-  version "0.1.12"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.1.12/660bee6196db64cb4450ab20aefa52ac070e5958dd4730a833f2b28857fb2345#32900b544e37446e51acbb7c1198adca22753f55"
-  integrity sha512-ak12gVCYoTiTfURG9kG6mVBX8xIWcP7e/6CRaDwmYFOsbZcIGdNlqKWOZ6HCtxUFo1HkaX3ehTGVno5iALG5PQ==
+"@waytrade/microservice-core@^0.1.17":
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/@waytrade/microservice-core/-/microservice-core-0.1.17.tgz#660a18a6e0fea0c82e84f75eea7c3dc09d986064"
+  integrity sha512-yo6g/XPxjMW+TUibKFZISwvgsSPa9AYRlSrZ6cq+sFSRI3b/tH5z7yParhNhcGuXCcSSGd2dBb1vgm5kzLl5EQ==
   dependencies:
     axios "^0.21.1"
     dotenv "^8.2.0"
@@ -4762,7 +4762,7 @@ typescript@~4.2.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.3.tgz#39062d8019912d43726298f09493d598048c1ce3"
   integrity sha512-qOcYwxaByStAWrBf4x0fibwZvMRG+r4cQoTjbPtUlrWjBHbmCAww1i448U0GJ+3cNNEtebDteo/cHOR3xJ4wEw==
 
-uWebSockets.js@uNetworking/uWebSockets.js#v18.14.0:
+"uWebSockets.js@github:uNetworking/uWebSockets.js#v18.14.0":
   version "18.14.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/b4bc740f46f1508c0f342b999db4d1f9dc80deab"
 

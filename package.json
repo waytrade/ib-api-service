@@ -2,14 +2,14 @@
   "name": "@waytrade/ib-api-service",
   "version": "0.1.11",
   "description": "Interactive Brokers API Service",
-  "author": "Matthias Frener <matthias.frener@gmx.net>",
-  "license": "UNLICENSED",
+  "author": "Matthias Frener <matthias.frener@gmail.com>",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/waytrade/ib-api-service.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/@waytrade"
+    "registry": "https://registry.npmjs.org"
   },
   "files": [
     "openapi.json"
@@ -38,8 +38,8 @@
     "node": ">=14.15.4"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.1.39",
-    "@waytrade/microservice-core": "^0.1.12",
+    "@stoqey/ib": "^1.1.40",
+    "@waytrade/microservice-core": "^0.1.17",
     "rxjs": "^6.6.7"
   },
   "devDependencies": {

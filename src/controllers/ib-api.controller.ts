@@ -37,7 +37,7 @@ import {
 import {IBApiService} from "../services/ib-api-service";
 
 /**
- * The IBApi endpoint + controller.cd ..
+ * The IBApi endpoint + controller.
  */
 @controller("IB Api Endpoint")
 export class IBApiController {
@@ -45,7 +45,7 @@ export class IBApiController {
   private static connectionState$?: Subscription;
 
   /**
-   * Time when to connection to IB Gateway was established,
+   * Time when connection to IB Gateway was established,
    * or undefined if not connected.
    */
   private static connectionTime?: number;

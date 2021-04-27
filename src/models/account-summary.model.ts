@@ -9,6 +9,7 @@ export class AccountSummary {
   @property("The name of the account.")
   account?: string;
 
+  /** Account base currency. */
   @property("The account base currency.")
   baseCurrency?: string;
 

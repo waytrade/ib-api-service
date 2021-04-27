@@ -18,15 +18,27 @@
 
 ## Usage
 
-### node package
+### Run the standalone docker (with IB Gateway, IBC and ib-api-service)
+
+Create an .env file on root folder with:
+
+- TWS_USERID (your TWS user id)
+- TWS_PASSWORD (your TWS password)#
+- TRADING_MODE ('paper' or 'live')
+
+Run:
+
+    $ docker-compose up --build
+
+### Get openapi.json as a node package
 
     $ yarn add @waytrade/ib-api-service
 
-update:
+and generate your client code, like:
 
-    $ yarn upgrade @waytrade/ib-api-service@^
+    $ openapi-generator-cli generate -i ./node_modules/@waytrade/ib-api-service/openapi.json -g typescript-axios -o ./src/apis/ib-api-service
 
-### docker-compose.yml:
+### Include on your docker-compose.yml:
 
 ```
 ib-api-service:
