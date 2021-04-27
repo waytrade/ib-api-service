@@ -55,7 +55,7 @@ jobs:
       # Publish the package
       - name: "Publish Package"
         run: |
-          pm config set //registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN
+          npm config set //registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN
           npm publish
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
