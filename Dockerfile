@@ -39,7 +39,6 @@ ENV TWOFA_TIMEOUT_ACTION exit
 WORKDIR /usr/src/app
 COPY ./package*.json ./
 COPY ./yarn.lock ./
-COPY ./.npmrc ./
 RUN yarn install
 COPY . .
 RUN yarn build
