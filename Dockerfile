@@ -2,6 +2,7 @@ FROM waytrade/microservice-core:latest
 
 # Install Linux Tools and Libs
 
+RUN apt-get update
 RUN apt-get install --no-install-recommends --yes \
   unzip \
   xvfb \
