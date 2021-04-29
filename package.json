@@ -1,6 +1,6 @@
 {
   "name": "@waytrade/ib-api-service",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Interactive Brokers API Service",
   "author": "Matthias Frener <matthias.frener@gmail.com>",
   "license": "MIT",
