@@ -257,20 +257,34 @@ export class IBApiController {
       !params.callbackUrl ||
       !params.port ||
       !params.instanceId ||
-      !params.conId
+      (!params.conId && !params.fxPair)
     ) {
       throw new HttpError(400);
     }
 
     // add webhook
 
-    const newHookAdded = this.marketDataHooks.add(
-      params.host ?? request.remoteAddress,
-      params.port,
-      params.callbackUrl,
-      params.instanceId + params.conId,
-      IBApiService.getMarketData(params.conId),
-    );
+    let newHookAdded = false;
+
+    if (params.conId) {
+      newHookAdded = this.marketDataHooks.add(
+        params.host ?? request.remoteAddress,
+        params.port,
+        params.callbackUrl,
+        params.instanceId + params.conId,
+        IBApiService.getMarketData(params.conId),
+      );
+    } else if (params.fxPair) {
+      const c0 = params.fxPair.substr(0, 3);
+      const c1 = params.fxPair.substr(3);
+      newHookAdded = this.marketDataHooks.add(
+        params.host ?? request.remoteAddress,
+        params.port,
+        params.callbackUrl,
+        params.instanceId + params.conId,
+        IBApiService.getFxMarketData(c0, c1),
+      );
+    }
 
     throw new HttpError(newHookAdded ? 201 : 204);
   }

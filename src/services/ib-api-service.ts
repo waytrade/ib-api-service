@@ -213,7 +213,7 @@ export class IBApiService {
         const latest: MarketData = {};
         sub$ = api
           .getMarketData(details.contract, "104,105,411", false, false)
-          //.pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
+          .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
           .subscribe({
             next: update => {
               const changed: MarketData = {};
@@ -231,6 +231,53 @@ export class IBApiService {
 
       return (): void => {
         unsubscribed = true;
+        sub$?.unsubscribe();
+      };
+    });
+  }
+
+  /** Get an Observable to receive FX spot-market data. */
+  static getFxMarketData(
+    baseCurrency: string,
+    fxCurrency: string,
+  ): Observable<MarketDataUpdate> {
+    return new Observable<MarketDataUpdate>(subscriber => {
+      const api = this.api;
+      if (!api) {
+        subscriber.error("Service not initialized.");
+        return;
+      }
+
+      api.setMarketDataType(IB.MarketDataType.FROZEN);
+      const latest: MarketData = {};
+      const sub$ = api
+        .getMarketData(
+          {
+            symbol: baseCurrency,
+            currency: fxCurrency,
+            exchange: "IDEALPRO",
+            secType: IB.SecType.CASH,
+          },
+          "",
+          false,
+          false,
+        )
+        .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
+        .subscribe({
+          next: update => {
+            const changed: MarketData = {};
+            this.updateMarketData(latest, update.all, changed);
+            subscriber.next({
+              fxPair: baseCurrency + fxCurrency,
+              marketData: changed,
+            });
+          },
+          error: (error: IB.IBApiNextError) => {
+            IBApiApp.error("getMarketData: " + error.error.message);
+          },
+        });
+
+      return (): void => {
         sub$?.unsubscribe();
       };
     });
@@ -286,6 +333,9 @@ export class IBApiService {
                 const summary = this.accountSummaries.get(account);
                 if (summary) {
                   Object.assign(summary, pnl);
+                  this.accountSummaryUpdates.next({
+                    summaries: [summary],
+                  });
                 }
               },
             });
