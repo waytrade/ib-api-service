@@ -379,8 +379,14 @@ export class MarketData {
 @model("A market data update on a contract.")
 export class MarketDataUpdate {
   /** The contract id. */
-  @property("The contract id.")
+  @property("The contract id. Undefined if this FX sport market data .")
   conId?: number;
+
+  /** The FX currency pair. */
+  @property(
+    "The FX currency pair. Undefined if this market data of a contract.",
+  )
+  fxPair?: string;
 
   /** The market data. */
   @property("The market data.")
@@ -406,9 +412,17 @@ export class MarketDataCallbackSubscription {
   @property("The callback url.")
   callbackUrl?: string;
 
-  /** The IB conId. */
-  @property("The IB conId.")
+  /** The IB conId for receiving market data of a contract. */
+  @property(
+    "The IB conId for receiving the market data of a contract. If undefined, fxPair must the defined.",
+  )
   conId?: number;
+
+  /** The FX currency pair for receiving forex spot rates. */
+  @property(
+    "The FX currency pair for receiving a forex spot rate. If undefined, conId must the defined.",
+  )
+  fxPair?: string;
 
   /**
    * An id that describes the subscription instance.
