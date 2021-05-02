@@ -51,12 +51,19 @@ export class Position {
  */
 @model("An update the positions.")
 export class PositionsUpdate {
-  /** List of added or changed positions. */
-  @arrayProperty(Position, "List of added or changed positions.")
+  /** List all positions. */
+  @arrayProperty(Position, "List all positions. Only send on full-syncs.")
+  all?: Position[];
+
+  /** List of added or changed positions since last update. */
+  @arrayProperty(
+    Position,
+    "List of added or changed positions since last update.",
+  )
   changed?: Position[];
 
-  /** List of closed positions. */
-  @arrayProperty(String, "List of closed positions.")
+  /** List of closed positions since last update. */
+  @arrayProperty(String, "List of closed positions since last update.")
   closed?: string[];
 }
 
@@ -78,12 +85,4 @@ export class PositionsCallbackSubscription {
   /** The callback url. */
   @property("The callback url.")
   callbackUrl?: string;
-
-  /**
-   * An id that describes the subscription instance.
-   * This is to enure that after a reboot, when callback and port are still same,
-   * the subscription is required because of different instance id.
-   */
-  @property("An id that describes the subscription instance.")
-  instanceId?: string;
 }

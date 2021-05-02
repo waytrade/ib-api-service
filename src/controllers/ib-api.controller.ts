@@ -64,8 +64,13 @@ export class IBApiController {
     (url, error): void => IBApiController.logFailedWebhook(url, error),
   );
 
-  /** List of currently active market data feed webhooks. */
-  private static marketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
+  /** List of currently active contract market data feed webhooks. */
+  private static contractMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
+    (url, error): void => IBApiController.logFailedWebhook(url, error),
+  );
+
+  /** List of currently active fx market data feed webhooks. */
+  private static fxMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
     (url, error): void => IBApiController.logFailedWebhook(url, error),
   );
 
@@ -99,6 +104,9 @@ export class IBApiController {
 
   /** Shutdown the controller. */
   static shutdown(): void {
+    this.positionsHooks.clear();
+    this.contractMarketDataHooks.clear();
+    this.fxMarketDataHooks.clear();
     this.connectionState$?.unsubscribe();
   }
 
@@ -139,7 +147,7 @@ export class IBApiController {
   ): void {
     // verify arguments
 
-    if (!params.callbackUrl || !params.port || !params.instanceId) {
+    if (!params.callbackUrl || !params.port) {
       throw new HttpError(400);
     }
 
@@ -149,7 +157,6 @@ export class IBApiController {
       params.host ?? request.remoteAddress,
       params.port,
       params.callbackUrl,
-      params.instanceId,
       IBApiService.getAccountSummaries(),
     );
 
@@ -178,7 +185,7 @@ export class IBApiController {
   ): void {
     // verify arguments
 
-    if (!params.callbackUrl || !params.port || !params.instanceId) {
+    if (!params.callbackUrl || !params.port) {
       throw new HttpError(400);
     }
 
@@ -188,7 +195,6 @@ export class IBApiController {
       params.host ?? request.remoteAddress,
       params.port,
       params.callbackUrl,
-      params.instanceId,
       IBApiService.getPositions(),
     );
 
@@ -206,8 +212,10 @@ export class IBApiController {
       throw new HttpError(HttpStatus.BAD_REQUEST);
     }
     const id = unescape(paths[3]);
-    const all = await IBApiService.getPositions().pipe(take(1)).toPromise();
-    const position = all.changed?.find(pos => pos.id === id);
+    const positions = await IBApiService.getPositions()
+      .pipe(take(1))
+      .toPromise();
+    const position = positions.all?.find(pos => pos.id === id);
     if (!position) {
       throw new HttpError(HttpStatus.NOT_FOUND);
     }
@@ -256,7 +264,6 @@ export class IBApiController {
     if (
       !params.callbackUrl ||
       !params.port ||
-      !params.instanceId ||
       (!params.conId && !params.fxPair)
     ) {
       throw new HttpError(400);
@@ -267,22 +274,22 @@ export class IBApiController {
     let newHookAdded = false;
 
     if (params.conId) {
-      newHookAdded = this.marketDataHooks.add(
+      newHookAdded = this.contractMarketDataHooks.add(
         params.host ?? request.remoteAddress,
         params.port,
         params.callbackUrl,
-        params.instanceId + params.conId,
         IBApiService.getMarketData(params.conId),
+        "" + params.conId,
       );
     } else if (params.fxPair) {
       const c0 = params.fxPair.substr(0, 3);
       const c1 = params.fxPair.substr(3);
-      newHookAdded = this.marketDataHooks.add(
+      newHookAdded = this.fxMarketDataHooks.add(
         params.host ?? request.remoteAddress,
         params.port,
         params.callbackUrl,
-        params.instanceId + params.conId,
         IBApiService.getFxMarketData(c0, c1),
+        params.fxPair,
       );
     }
 
