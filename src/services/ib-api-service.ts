@@ -164,7 +164,7 @@ export class IBApiService {
       // replay current positions
 
       subscriber.next({
-        changed: Array.from(this.positions.values()),
+        all: Array.from(this.positions.values()),
       });
 
       // subscribe on position updates
@@ -205,29 +205,36 @@ export class IBApiService {
       let sub$: Subscription | undefined = undefined;
       let unsubscribed = false;
 
-      this.getContractDetails(conId).then(details => {
-        if (unsubscribed) {
-          return;
-        }
-        api.setMarketDataType(IB.MarketDataType.FROZEN);
-        const latest: MarketData = {};
-        sub$ = api
-          .getMarketData(details.contract, "104,105,411", false, false)
-          .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
-          .subscribe({
-            next: update => {
-              const changed: MarketData = {};
-              this.updateMarketData(latest, update.all, changed);
-              subscriber.next({
-                conId: details.contract.conId,
-                marketData: changed,
-              });
-            },
-            error: (error: IB.IBApiNextError) => {
-              IBApiApp.error("getMarketData: " + error.error.message);
-            },
-          });
-      });
+      this.getContractDetails(conId)
+        .then(details => {
+          if (unsubscribed) {
+            return;
+          }
+          api.setMarketDataType(IB.MarketDataType.FROZEN);
+          const latest: MarketData = {};
+          sub$ = api
+            .getMarketData(details.contract, "104,105,411", false, false)
+            .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
+            .subscribe({
+              next: update => {
+                const changed: MarketData = {};
+                this.updateMarketData(latest, update.all, changed);
+                subscriber.next({
+                  conId: details.contract.conId,
+                  marketData: changed,
+                });
+              },
+              error: (error: IB.IBApiNextError) => {
+                IBApiApp.error("getMarketData: " + error.error.message);
+              },
+            });
+        })
+        .catch(e => {
+          IBApiApp.error(
+            `getContractDetails(${conId}) failed with: ${e.error.message}`,
+          );
+          subscriber.error(e);
+        });
 
       return (): void => {
         unsubscribed = true;
@@ -430,48 +437,57 @@ export class IBApiService {
 
             // request details
 
-            this.getContractDetails(pos.contract.conId).then(details => {
-              currentPosition.details = {};
-              Object.assign(currentPosition.details, details);
+            this.getContractDetails(pos.contract.conId)
+              .then(details => {
+                currentPosition.details = {};
+                Object.assign(currentPosition.details, details);
 
-              // request market data
+                // request market data
 
-              if (this.positionsMarketDataSubscriptions.has(id) || !this.api) {
-                return;
-              }
+                if (
+                  this.positionsMarketDataSubscriptions.has(id) ||
+                  !this.api
+                ) {
+                  return;
+                }
 
-              this.api.setMarketDataType(IB.MarketDataType.FROZEN);
+                this.api.setMarketDataType(IB.MarketDataType.FROZEN);
 
-              const latest: MarketData = {};
-              const marketData$ = this.api
-                ?.getMarketData(details.contract, "104,105,411", false, false)
-                .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
-                .subscribe({
-                  error: (error: IB.IBApiNextError) => {
-                    IBApiApp.error("getPnLSingle: " + error.error.message);
-                  },
-                  next: update => {
-                    const changed: MarketData = {};
-                    this.updateMarketData(latest, update.all, changed);
+                const latest: MarketData = {};
+                const marketData$ = this.api
+                  ?.getMarketData(details.contract, "104,105,411", false, false)
+                  .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
+                  .subscribe({
+                    error: (error: IB.IBApiNextError) => {
+                      IBApiApp.error("getPnLSingle: " + error.error.message);
+                    },
+                    next: update => {
+                      const changed: MarketData = {};
+                      this.updateMarketData(latest, update.all, changed);
 
-                    currentPosition.marketData =
-                      currentPosition.marketData ?? {};
-                    Object.assign(currentPosition.marketData, latest);
+                      currentPosition.marketData =
+                        currentPosition.marketData ?? {};
+                      Object.assign(currentPosition.marketData, latest);
 
-                    this.positionUpdates.next({
-                      changed: [
-                        {
-                          id: id,
-                          marketData: changed,
-                        },
-                      ],
-                    });
-                  },
-                });
+                      this.positionUpdates.next({
+                        changed: [
+                          {
+                            id: id,
+                            marketData: changed,
+                          },
+                        ],
+                      });
+                    },
+                  });
 
-              this.positionsMarketDataSubscriptions.set(id, marketData$);
-              this.subscriptions.add(marketData$);
-            });
+                this.positionsMarketDataSubscriptions.set(id, marketData$);
+                this.subscriptions.add(marketData$);
+              })
+              .catch(e => {
+                IBApiApp.error(
+                  `getContractDetails(${pos.contract.conId}) failed with: ${e.error.message}`,
+                );
+              });
           });
         });
 
