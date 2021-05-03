@@ -90,9 +90,19 @@ export class AccountSummary {
  */
 @model("An update on the account summaries.")
 export class AccountSummariesUpdate {
-  /** List of changed account summaries. */
-  @arrayProperty(AccountSummary, "List of changed account summaries")
-  summaries?: AccountSummary[];
+  /** List of all account summary. Only valid on full-sync. */
+  @arrayProperty(
+    AccountSummary,
+    "List of all account summary. Only valid on full-sync.",
+  )
+  all?: AccountSummary[];
+
+  /** List of changed account summaries since last update. */
+  @arrayProperty(
+    AccountSummary,
+    "List of changed account summaries since last update.",
+  )
+  changed?: AccountSummary[];
 }
 
 /**

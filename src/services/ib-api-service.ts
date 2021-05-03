@@ -141,7 +141,7 @@ export class IBApiService {
       // replay current account summaries
 
       subscriber.next({
-        summaries: Array.from(this.accountSummaries.values()),
+        all: Array.from(this.accountSummaries.values())
       });
 
       // subscribe on account summary updates
@@ -164,7 +164,7 @@ export class IBApiService {
       // replay current positions
 
       subscriber.next({
-        all: Array.from(this.positions.values()),
+        all: Array.from(this.positions.values())
       });
 
       // subscribe on position updates
@@ -304,6 +304,7 @@ export class IBApiService {
       next: update => {
         // update account summaries list
 
+        this.accountSummaries.clear();
         this.updateAccountSummaries(this.accountSummaries, update.all);
 
         // send changed to subscribers
@@ -313,7 +314,7 @@ export class IBApiService {
         this.updateAccountSummaries(changed, update.added);
 
         this.accountSummaryUpdates.next({
-          summaries: Array.from(changed.values()),
+          changed: Array.from(changed.values()),
         });
       },
     });
@@ -326,7 +327,7 @@ export class IBApiService {
   private static subscribePnL(): void {
     const sub$ = this.accountSummaryUpdates.subscribe({
       next: update => {
-        update.summaries?.forEach(accountSummary => {
+        update.changed?.forEach(accountSummary => {
           const account = accountSummary.account;
           if (!account) {
             return;
@@ -341,7 +342,7 @@ export class IBApiService {
                 if (summary) {
                   Object.assign(summary, pnl);
                   this.accountSummaryUpdates.next({
-                    summaries: [summary],
+                    changed: [summary],
                   });
                 }
               },
