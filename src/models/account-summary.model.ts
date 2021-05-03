@@ -113,12 +113,4 @@ export class AccountSummaryCallbackSubscription {
   /** The callback url. */
   @property("The callback url.")
   callbackUrl?: string;
-
-  /**
-   * An id that describes the subscription instance.
-   * This is to enure that after a reboot, when callback and port are still same,
-   * the subscription is required because of different instance id.
-   */
-  @property("An id that describes the subscription instance.")
-  instanceId?: string;
 }
