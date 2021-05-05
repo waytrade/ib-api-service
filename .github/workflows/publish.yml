@@ -60,6 +60,7 @@ jobs:
         with:
           node-version: "14.x"
           registry-url: "https://registry.npmjs.org"
+          always-auth: true
 
       - name: "Publish to npmjs"
         run: |
