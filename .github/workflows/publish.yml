@@ -52,13 +52,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
           
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "14.x"
-          registry-url: https://npm.pkg.github.com/
-          scope: '@waytrade'
-          
-      - name: "Publish to npmjs"
+      - name: "Publish to github"
         run: |
           echo registry=https://npm.pkg.github.com/waytrade >> .npmrc
           npm config set //npm.pkg.github.com//:_authToken=$NODE_AUTH_TOKEN
