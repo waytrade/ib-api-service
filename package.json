@@ -9,6 +9,7 @@
     "url": "https://github.com/waytrade/ib-api-service.git"
   },
   "files": [
+    "dist/",
     "openapi.json"
   ],
   "scripts": {
