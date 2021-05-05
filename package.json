@@ -8,9 +8,6 @@
     "type": "git",
     "url": "https://github.com/waytrade/ib-api-service.git"
   },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org"
-  },
   "files": [
     "openapi.json"
   ],
@@ -32,7 +29,9 @@
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
     "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
-    "docker:up": "docker-compose up"
+    "docker:up": "docker-compose up",
+    "postpublish": "npm run publish-npm",
+    "publish-npm": "npm publish --access public --ignore-scripts --@OWNER:registry='https://registry.npmjs.org'"
   },
   "engines": {
     "node": ">=14.15.4"
