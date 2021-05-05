@@ -1,6 +1,6 @@
 {
   "name": "@waytrade/ib-api-service",
-  "version": "0.1.26",
+  "version": "0.1.25",
   "description": "Interactive Brokers API Service",
   "author": "Matthias Frener <matthias.frener@gmail.com>",
   "license": "MIT",
@@ -29,9 +29,7 @@
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
     "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
-    "docker:up": "docker-compose up",
-    "postpublish": "npm run publish-npm",
-    "publish-npm": "npm publish --access public --ignore-scripts --@waytrade:registry='https://registry.npmjs.org'"
+    "docker:up": "docker-compose up"
   },
   "engines": {
     "node": ">=14.15.4"
