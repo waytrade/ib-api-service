@@ -31,7 +31,7 @@
     "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
     "docker:up": "docker-compose up",
     "postpublish": "npm run publish-npm",
-    "publish-npm": "npm publish --access public --ignore-scripts --@OWNER:registry='https://registry.npmjs.org'"
+    "publish-npm": "npm publish --access public --ignore-scripts --@waytrade:registry='https://registry.npmjs.org'"
   },
   "engines": {
     "node": ">=14.15.4"
