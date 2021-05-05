@@ -21,9 +21,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: "14.x"
-          registry-url: 'https://npm.pkg.github.com'
-          scope: "@waytrade"
-          always-auth: true
+          registry-url: https://registry.npmjs.org/
           
       - name: "Install OpenAPI Tools"
         run: npm install --global @openapitools/openapi-generator-cli
@@ -46,33 +44,25 @@ jobs:
           tag-prefix: ""
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish-npm:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          node-version: "14.x"
-          registry-url: https://registry.npmjs.org/
-      - run: npm yarn build
-      - run: npm publish --access public
+          
+      - name: "Publish to npmjs"
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
+          npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
-
-  publish-gpr:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          
+      - uses: actions/setup-node@v2
         with:
           node-version: "14.x"
           registry-url: https://npm.pkg.github.com/
           scope: '@waytrade'
-      - run: npm yarn build
-      - run: echo registry=https://npm.pkg.github.com/waytrade >> .npmrc
-      - run: npm publish
+          
+      - name: "Publish to npmjs"
+        run: |
+          echo registry=https://npm.pkg.github.com/waytrade >> .npmrc
+          npm config set //npm.pkg.github.com//:_authToken=$NODE_AUTH_TOKEN
+          npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.PUBLISH_GITHUB_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   
