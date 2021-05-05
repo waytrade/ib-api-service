@@ -18,33 +18,28 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      # Setup Node.js
       - name: "Setup Node.js"
         uses: "actions/setup-node@v2"
         with:
           node-version: "14.x"
+          scope: "@waytrade"
+          always-auth: true
 
-      # Install openapitools/openapi-generator-cli
       - name: "Install OpenAPI Tools"
         run: npm install --global @openapitools/openapi-generator-cli
 
-      # Install packages with yarn
-      - name: "Install"
+      - name: "Install Dependencies"
         run: yarn install
 
-      # Build
-      - name: "Build"
+      - name: "Build Code"
         run: yarn build
 
-      # Run tests
-      - name: "Test"
+      - name: "Run Tests"
         run: yarn test
 
-      # Export and validate APIs
       - name: "Validate API"
         run: yarn validate-openapi
 
-      # Automated Version Bump
       - name: "Automated Version Bump"
         uses: "phips28/gh-action-bump-version@master"
         with:
@@ -52,10 +47,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Publish the package
-      - name: "Publish Package"
+      - name: "Publish to github"
         run: |
           npm config set //registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN
           npm publish --access public
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          
+      - name: "Publish to github"
+        run: |
+          npm config set registry https://npm.pkg.github.com
+          npm config set //npm.pkg.github.com//:_authToken=$NPM_AUTH_TOKEN
+          npm publish
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
