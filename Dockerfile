@@ -14,9 +14,9 @@ COPY . .
 RUN yarn build
 
 # Install IB Gateway
-RUN curl -sSL https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh --output tws-latest-standalone-linux-x64.sh
-RUN chmod a+x tws-latest-standalone-linux-x64.sh
-RUN ./tws-latest-standalone-linux-x64.sh -q -dir /opt/Jts/981
+RUN curl -sSL https://download2.interactivebrokers.com/installers/ibgateway/latest-standalone/ibgateway-latest-standalone-linux-x64.sh --output ibgateway-latest-standalone-linux-x64.sh
+RUN chmod a+x ibgateway-latest-standalone-linux-x64.sh
+RUN ./ibgateway-latest-standalone-linux-x64.sh -q -dir /root/Jts/ibgateway/983
 
 # Install IbcAlpha
 WORKDIR /opt/ibc
@@ -45,8 +45,8 @@ COPY ./package*.json ./
 COPY ./config ./config
 COPY --from=build /usr/src/app/dist/ ./dist
 COPY --from=build /usr/src/app/node_modules/ ./node_modules
-COPY --from=build /opt/Jts/981/ /opt/Jts/981
-COPY --from=build /opt/i4j_jres/ /opt/i4j_jres
+COPY --from=build /root/Jts/ibgateway/983 /root/Jts/ibgateway/983
+COPY --from=build /usr/local/i4j_jres/ /usr/local/i4j_jres
 COPY --from=build /opt/ibc/ /opt/ibc
 COPY ./docker/config/ibc/ /opt/ibc
 RUN chmod -R u+x /opt/ibc/*.sh && chmod -R u+x /opt/ibc/scripts/*.sh
@@ -57,8 +57,8 @@ ADD ./docker/run.sh ./run.sh
 RUN chmod a+x ./run.sh
 
 # IbcAlpha env vars
-ENV TWS_MAJOR_VRSN 981
-ENV TWS_PATH /opt/Jts
+ENV TWS_MAJOR_VRSN 983
+ENV TWS_PATH /root/Jts
 ENV IBC_PATH /opt/ibc
 ENV IBC_INI /opt/ibc/config.ini
 ENV TWOFA_TIMEOUT_ACTION exit
