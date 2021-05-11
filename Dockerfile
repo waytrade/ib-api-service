@@ -45,7 +45,7 @@ COPY ./package*.json ./
 COPY ./config ./config
 COPY --from=build /usr/src/app/dist/ ./dist
 COPY --from=build /usr/src/app/node_modules/ ./node_modules
-COPY --from=build /root/Jts/ibgateway/983 /root/Jts/ibgateway/983
+COPY --from=build /root/Jts/ibgateway/983/ /root/Jts/ibgateway/983
 COPY --from=build /usr/local/i4j_jres/ /usr/local/i4j_jres
 COPY --from=build /opt/ibc/ /opt/ibc
 COPY ./docker/config/ibc/ /opt/ibc
