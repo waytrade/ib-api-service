@@ -1,4 +1,7 @@
 import {IBApiApp} from ".";
 
 // run the App
-new IBApiApp().run();
+
+export const APP_INSTANCE = new IBApiApp();
+
+APP_INSTANCE.run();

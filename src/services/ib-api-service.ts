@@ -11,6 +11,7 @@ import {
 import {Contract} from "../models/contract.model";
 import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
+import {APP_INSTANCE} from "../run";
 import {IBApiLoggerProxy} from "../utils/ib-api-logger-proxy";
 
 /** A position ID. */
@@ -26,6 +27,9 @@ const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 100;
 export class IBApiService {
   /** The [[IBApiNext]] instance. */
   private static api?: IB.IBApiNext;
+
+  /** Subscription on connection date. */
+  private static connectionState$?: Subscription;
 
   /** Map of all current account summaries, with account id as key. */
   private static readonly accountSummaries = new MapExt<
@@ -89,7 +93,8 @@ export class IBApiService {
       port: IBApiApp.config.IB_GATEWAY_PORT,
       host: IBApiApp.config.IB_GATEWAY_HOST,
       logger: new IBApiLoggerProxy(IBApiApp.context),
-      reconnectInterval: 15000,
+      connectionWatchdogInterval: 30,
+      reconnectInterval: 5000,
     });
 
     switch (IBApiApp.config.LOG_LEVEL) {
@@ -107,6 +112,25 @@ export class IBApiService {
         break;
     }
 
+    // exit on connection loss
+
+    let connectionTries = 0;
+    this.connectionState$ = this.api.connectionState.subscribe({
+      next: state => {
+        switch (state) {
+          case IB.ConnectionState.Connecting:
+            connectionTries++;
+            break;
+          case IB.ConnectionState.Disconnected:
+            if (connectionTries > 2) {
+              IBApiApp.error("Lost connection to IB Gateway, rebooting...");
+              APP_INSTANCE.shutdown();
+            }
+            break;
+        }
+      },
+    });
+
     // connect to IB Gateway
 
     this.api.connect();
@@ -116,14 +140,6 @@ export class IBApiService {
     this.subscribePositions();
     this.subscribeAccountSummaries();
     this.subscribePnL();
-  }
-
-  /** Get an observable to watch the connection state to IB Gateway */
-  static get connectionState(): Observable<IB.ConnectionState> {
-    if (!this.api) {
-      throw new Error("IBApiNext not initialized.");
-    }
-    return this.api.connectionState;
   }
 
   /** Shutdown the service. */
@@ -137,6 +153,8 @@ export class IBApiService {
     this.positionsMarketDataSubscriptions.clear();
 
     // disconnect
+
+    this.connectionState$?.unsubscribe();
 
     if (this.api) {
       this.api.disconnect();

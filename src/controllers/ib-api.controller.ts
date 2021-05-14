@@ -1,4 +1,3 @@
-import * as IB from "@stoqey/ib";
 import {
   callback,
   controller,
@@ -16,14 +15,12 @@ import {
   WebhookCallbackSubscriptions,
 } from "@waytrade/microservice-core";
 import HttpStatus from "http-status";
-import {Subscription} from "rxjs";
 import {take} from "rxjs/operators";
 import {IBApiApp} from "..";
 import {
   AccountSummariesUpdate,
   AccountSummaryCallbackSubscription,
 } from "../models/account-summary.model";
-import {ConnectionState} from "../models/connection-state.model";
 import {ContractDetails} from "../models/contract-details.model";
 import {
   MarketDataCallbackSubscription,
@@ -41,15 +38,7 @@ import {IBApiService} from "../services/ib-api-service";
  */
 @controller("IB Api Endpoint")
 export class IBApiController {
-  /** Subscription on the IB API connection state. */
-  private static connectionState$?: Subscription;
-
-  /**
-   * Time when connection to IB Gateway was established,
-   * or undefined if not connected.
-   */
-  private static connectionTime?: number;
-
+  /** Webhook failure callback. */
   private static logFailedWebhook(url: string, error: Error): void {
     IBApiApp.warn("Failed to POST " + url + ": " + error.message);
   }
@@ -74,56 +63,20 @@ export class IBApiController {
     (url, error): void => IBApiController.logFailedWebhook(url, error),
   );
 
-  /** true if currently connected to IB Gateway, false otherwise. */
-  private static get connected(): boolean {
-    return this.connectionTime !== undefined;
-  }
-
   //
   // Service functions
   //
-
-  /** Boot the controller. */
-  static async boot(): Promise<void> {
-    // init IBApiNext
-
-    this.shutdown();
-
-    // connect to IB Gateway and init subscriptions
-
-    this.connectionState$ = IBApiService.connectionState.subscribe({
-      next: state => {
-        if (state === IB.ConnectionState.Connected) {
-          this.connectionTime = Date.now();
-        } else {
-          delete this.connectionTime;
-        }
-      },
-    });
-  }
 
   /** Shutdown the controller. */
   static shutdown(): void {
     this.positionsHooks.clear();
     this.contractMarketDataHooks.clear();
     this.fxMarketDataHooks.clear();
-    this.connectionState$?.unsubscribe();
   }
 
   //
   // Endpoint functions
   //
-
-  @get("/connectionState")
-  @summary("Get the connection state.")
-  @description("Get the connection state to IB Gateway.")
-  @responseBody(ConnectionState)
-  static getConnectionState(): ConnectionState {
-    return {
-      connected: this.connectionTime !== undefined,
-      connectionTime: this.connectionTime,
-    };
-  }
 
   @post("/accountSummaries")
   @summary("Get the account summaries.")
@@ -232,10 +185,6 @@ export class IBApiController {
     request: MicroserviceRequest,
   ): Promise<ContractDetails> {
     // verify state and arguments
-
-    if (!this.connected) {
-      throw new HttpError(504);
-    }
 
     const conid = Number(request.queryParams.conid);
     if (conid === undefined || conid == NaN) {

@@ -574,10 +574,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@stoqey/ib@^1.1.42":
-  version "1.1.42"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.42.tgz#9f08b45b93421e7001335c76a78c8dde7f1eafea"
-  integrity sha512-NmzuFCHtucXUwjmkLP1a6CC2y89E5rixZgTf2wGO5STuI2atWGL8HiArgAypP8AvwR3JEg9ZUeaopd8ju9pHrA==
+"@stoqey/ib@^1.1.43":
+  version "1.1.43"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.43.tgz#6327a10bc830e5ea3d265eedac2e91847e50d820"
+  integrity sha512-d/ZHDAwJTR1Fof4AbZ8ndSZhfYWlRRwI+lwcoBKCsSiaG2Asg0wiGr7ZXpsgRgn9IO7RwF7GjyNG7v1Vtz8Xlg==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"
@@ -4781,7 +4781,7 @@ typescript@~4.2.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.3.tgz#39062d8019912d43726298f09493d598048c1ce3"
   integrity sha512-qOcYwxaByStAWrBf4x0fibwZvMRG+r4cQoTjbPtUlrWjBHbmCAww1i448U0GJ+3cNNEtebDteo/cHOR3xJ4wEw==
 
-"uWebSockets.js@github:uNetworking/uWebSockets.js#v18.14.0":
+uWebSockets.js@uNetworking/uWebSockets.js#v18.14.0:
   version "18.14.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/b4bc740f46f1508c0f342b999db4d1f9dc80deab"
 
