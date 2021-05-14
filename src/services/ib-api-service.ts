@@ -1,5 +1,6 @@
 import * as IB from "@stoqey/ib";
 import {MapExt, service} from "@waytrade/microservice-core";
+import LruCache from "lru-cache";
 import {Observable, Subject, Subscription} from "rxjs";
 import {debounceTime, map, take} from "rxjs/operators";
 import {IBApiApp} from "..";
@@ -61,6 +62,14 @@ export class IBApiService {
     string,
     Subscription
   >();
+
+  /** Cache of a requested contract details, with conid as key. */
+  private static readonly contractDetails = new LruCache<
+    number,
+    IB.ContractDetails
+  >({
+    max: 128,
+  });
 
   /** Start the service. */
   static async boot(): Promise<void> {
@@ -141,7 +150,7 @@ export class IBApiService {
       // replay current account summaries
 
       subscriber.next({
-        all: Array.from(this.accountSummaries.values())
+        all: Array.from(this.accountSummaries.values()),
       });
 
       // subscribe on account summary updates
@@ -164,7 +173,7 @@ export class IBApiService {
       // replay current positions
 
       subscriber.next({
-        all: Array.from(this.positions.values())
+        all: Array.from(this.positions.values()),
       });
 
       // subscribe on position updates
@@ -184,11 +193,19 @@ export class IBApiService {
     if (!this.api) {
       throw new Error("Service not initialized.");
     }
+    const details = this.contractDetails.get(conId);
+    if (details) {
+      return new Promise<IB.ContractDetails>(resolve => resolve(details));
+    }
+
     return this.api
       ?.getContractDetails({conId})
       .pipe(
         take(1),
-        map((v: IB.ContractDetailsUpdate) => v.all[0]),
+        map((v: IB.ContractDetailsUpdate) => {
+          this.contractDetails.set(conId, v.all[0]);
+          return v.all[0];
+        }),
       )
       .toPromise();
   }
