@@ -1,3 +1,5 @@
 {
-  "LOG_LEVEL": "debug"
+  "LOG_LEVEL": "debug",
+  "SERVER_PORT": 3004,
+  "IB_GATEWAY_PORT": 4002
 }
