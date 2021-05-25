@@ -15,7 +15,7 @@ import {
   WebhookCallbackSubscriptions,
 } from "@waytrade/microservice-core";
 import HttpStatus from "http-status";
-import {take} from "rxjs/operators";
+import {firstValueFrom} from "rxjs";
 import {IBApiApp} from "..";
 import {
   AccountSummariesUpdate,
@@ -83,7 +83,7 @@ export class IBApiController {
   @description("Get a snapshot of the current account summaries.")
   @responseBody(AccountSummariesUpdate)
   static async getAccountSummaries(): Promise<AccountSummariesUpdate> {
-    return IBApiService.getAccountSummaries().pipe(take(1)).toPromise();
+    return firstValueFrom(IBApiService.getAccountSummaries());
   }
 
   @post("/subscribeAccountSummaries")
@@ -121,7 +121,7 @@ export class IBApiController {
   @description("Get a snapshot of currently open positions.")
   @responseBody(PositionsUpdate)
   static async getPositions(): Promise<PositionsUpdate> {
-    return await IBApiService.getPositions().pipe(take(1)).toPromise();
+    return await firstValueFrom(IBApiService.getPositions());
   }
 
   @post("/positions")
@@ -165,9 +165,7 @@ export class IBApiController {
       throw new HttpError(HttpStatus.BAD_REQUEST);
     }
     const id = unescape(paths[3]);
-    const positions = await IBApiService.getPositions()
-      .pipe(take(1))
-      .toPromise();
+    const positions = await firstValueFrom(IBApiService.getPositions());
     const position = positions.all?.find(pos => pos.id === id);
     if (!position) {
       throw new HttpError(HttpStatus.NOT_FOUND);

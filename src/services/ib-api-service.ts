@@ -1,7 +1,7 @@
 import * as IB from "@stoqey/ib";
 import {MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
-import {Observable, Subject, Subscription} from "rxjs";
+import {firstValueFrom, Observable, Subject, Subscription} from "rxjs";
 import {debounceTime, map, take} from "rxjs/operators";
 import {IBApiApp} from "..";
 import {
@@ -216,16 +216,15 @@ export class IBApiService {
       return new Promise<IB.ContractDetails>(resolve => resolve(details));
     }
 
-    return this.api
-      ?.getContractDetails({conId})
-      .pipe(
+    return firstValueFrom(
+      this.api?.getContractDetails({conId}).pipe(
         take(1),
         map((v: IB.ContractDetailsUpdate) => {
           this.contractDetails.set(conId, v.all[0]);
           return v.all[0];
         }),
-      )
-      .toPromise();
+      ),
+    );
   }
 
   /** Get an Observable to receive market data of a contract. */

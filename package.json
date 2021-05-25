@@ -40,7 +40,7 @@
     "@types/lru-cache": "^5.1.0",
     "@waytrade/microservice-core": "^0.1.30",
     "lru-cache": "^6.0.0",
-    "rxjs": "^6.6.7"
+    "rxjs": "^7.1.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.21",
