@@ -247,7 +247,12 @@ export class IBApiService {
           api.setMarketDataType(IB.MarketDataType.FROZEN);
           const latest: MarketData = {};
           sub$ = api
-            .getMarketData(details.contract, "104,105,411", false, false)
+            .getMarketData(
+              details.contract,
+              "104,105,106,165,411",
+              false,
+              false,
+            )
             .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
             .subscribe({
               next: update => {
@@ -490,7 +495,12 @@ export class IBApiService {
 
                 const latest: MarketData = {};
                 const marketData$ = this.api
-                  ?.getMarketData(details.contract, "104,105,411", false, false)
+                  ?.getMarketData(
+                    details.contract,
+                    "104,105,106,165,411",
+                    false,
+                    false,
+                  )
                   .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
                   .subscribe({
                     error: (error: IB.IBApiNextError) => {
