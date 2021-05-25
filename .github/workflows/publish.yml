@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - "master"
-env:
-  IMAGE_NAME: ib-api-service
+      - "stable"
 
 jobs:
   test:
