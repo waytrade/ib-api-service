@@ -574,10 +574,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@stoqey/ib@^1.1.43":
-  version "1.1.43"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.43.tgz#6327a10bc830e5ea3d265eedac2e91847e50d820"
-  integrity sha512-d/ZHDAwJTR1Fof4AbZ8ndSZhfYWlRRwI+lwcoBKCsSiaG2Asg0wiGr7ZXpsgRgn9IO7RwF7GjyNG7v1Vtz8Xlg==
+"@stoqey/ib@^1.1.45":
+  version "1.1.45"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.45.tgz#a8e15ff1136114eb7391f026ac902a5b05a4dcdc"
+  integrity sha512-0W5/LbnY6ksVAvqnu2ZNiYevK2KAhWhX4adZO8ybfjd2gtitndC/UeAcClhJmYDZW3cmmKvCVBpaK3mombpvow==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"
@@ -808,10 +808,10 @@
     "@typescript-eslint/types" "4.20.0"
     eslint-visitor-keys "^2.0.0"
 
-"@waytrade/microservice-core@^0.1.29":
-  version "0.1.29"
-  resolved "https://registry.yarnpkg.com/@waytrade/microservice-core/-/microservice-core-0.1.29.tgz#2cebee04c53320552c9134fe78b82573b3808039"
-  integrity sha512-qv8D/nMQO4fGvpRn4Wwmx2g5vKf6bYk4T/2VthDpo6ge7XAR2tJnKZE4F4w69gv0BPhr9aS5qXs1OB+dT7q1jQ==
+"@waytrade/microservice-core@^0.1.30":
+  version "0.1.30"
+  resolved "https://registry.yarnpkg.com/@waytrade/microservice-core/-/microservice-core-0.1.30.tgz#62f2a81906093f136c3ca078e47a382ee15b023e"
+  integrity sha512-jFExpsJKQx++vAlhjJ/n5Reum3WRkq5shctFvJz6lElfrXBXKFqFYVSHceSsMUi9Qm5jPbLAieUOIFSiMYjT3A==
   dependencies:
     axios "^0.21.1"
     dotenv "^8.2.0"
@@ -4120,6 +4120,13 @@ rxjs@^6.6.3, rxjs@^6.6.7:
   dependencies:
     tslib "^1.9.0"
 
+rxjs@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.1.0.tgz#94202d27b19305ef7b1a4f330277b2065df7039e"
+  integrity sha512-gCFO5iHIbRPwznl6hAYuwNFld8W4S2shtSJIqG27ReWXo9IWrCyEICxUA+6vJHwSR/OakoenC4QsDxq50tzYmw==
+  dependencies:
+    tslib "~2.1.0"
+
 safe-buffer@^5.0.1, safe-buffer@^5.1.2, safe-buffer@~5.2.0:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.2.1.tgz#1eaf9fa9bdb1fdd4ec75f58f9cdb4e6b7827eec6"
@@ -4703,6 +4710,11 @@ tslib@^2.0.0:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.2.0.tgz#fb2c475977e35e241311ede2693cee1ec6698f5c"
   integrity sha512-gS9GVHRU+RGn5KQM2rllAlR3dU6m7AcpJKdtH8gFvQiC4Otgk98XnmMU+nZenHt/+VhnBPWwgrJsyrdcw6i23w==
 
+tslib@~2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.1.0.tgz#da60860f1c2ecaa5703ab7d39bc05b6bf988b97a"
+  integrity sha512-hcVC3wYEziELGGmEEXue7D75zbwIIVUMWAVbHItGPx0ziyXxrOMQx4rQEVEV45Ut/1IotuEvwqPopzIOkDMf0A==
+
 tsutils-etc@^1.0.0, tsutils-etc@^1.2.2:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/tsutils-etc/-/tsutils-etc-1.3.2.tgz#a4e05600f73f540c8f081654dc19802c7cb50d49"
@@ -4781,7 +4793,7 @@ typescript@~4.2.3:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.3.tgz#39062d8019912d43726298f09493d598048c1ce3"
   integrity sha512-qOcYwxaByStAWrBf4x0fibwZvMRG+r4cQoTjbPtUlrWjBHbmCAww1i448U0GJ+3cNNEtebDteo/cHOR3xJ4wEw==
 
-uWebSockets.js@uNetworking/uWebSockets.js#v18.14.0:
+"uWebSockets.js@github:uNetworking/uWebSockets.js#v18.14.0":
   version "18.14.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/b4bc740f46f1508c0f342b999db4d1f9dc80deab"
 
