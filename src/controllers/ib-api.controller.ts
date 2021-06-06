@@ -21,6 +21,7 @@ import {
   AccountSummariesUpdate,
   AccountSummaryCallbackSubscription,
 } from "../models/account-summary.model";
+import {OHLCBars} from "../models/bar";
 import {ContractDetails} from "../models/contract-details.model";
 import {
   MarketDataCallbackSubscription,
@@ -44,24 +45,28 @@ export class IBApiController {
   }
 
   /** List of currently active account summary webhooks. */
-  private static accountSummaryHooks = new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static accountSummaryHooks =
+    new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
+      (url, error): void => IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active position list webhooks. */
-  private static positionsHooks = new WebhookCallbackSubscriptions<PositionsUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static positionsHooks =
+    new WebhookCallbackSubscriptions<PositionsUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active contract market data feed webhooks. */
-  private static contractMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static contractMarketDataHooks =
+    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active fx market data feed webhooks. */
-  private static fxMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static fxMarketDataHooks =
+    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   //
   // Service functions
@@ -178,7 +183,7 @@ export class IBApiController {
   @description("Get contract details of the contract id.")
   @queryParameter("conid", Number, true, "The IB contract id.")
   @response(504, "Not connect to IB Gateway.")
-  @requestBody(ContractDetails)
+  @responseBody(ContractDetails)
   static async getContractDetails(
     request: MicroserviceRequest,
   ): Promise<ContractDetails> {
@@ -241,5 +246,55 @@ export class IBApiController {
     }
 
     throw new HttpError(newHookAdded ? 201 : 204);
+  }
+
+  @get("/historicalData")
+  @summary("Get a contracts historical data.")
+  @description("Get a contracts historical data.")
+  @queryParameter("conid", Number, true, "The IB contract id.")
+  @queryParameter(
+    "duration",
+    String,
+    true,
+    "The amount of time for which the data needs to be retrieved",
+  )
+  @queryParameter("barSize", String, true, "The size of the bar")
+  @responseBody(OHLCBars)
+  static async getHistoricalData(
+    request: MicroserviceRequest,
+  ): Promise<OHLCBars> {
+    const conid = Number(request.queryParams.conid);
+    if (conid === undefined || conid == NaN) {
+      throw new HttpError(400);
+    }
+    const duration = request.queryParams.duration as string;
+    if (duration === undefined) {
+      throw new HttpError(400);
+    }
+    const barSize = request.queryParams.barSize as string;
+    if (barSize === undefined) {
+      throw new HttpError(400);
+    }
+
+    const now = new Date();
+    const endTime = `${now.getFullYear()}${("0" + (now.getMonth() + 1)).slice(
+      -2,
+    )}${("0" + now.getDate()).slice(-2)} ${("0" + now.getHours()).slice(-2)}:${(
+      "0" + now.getMinutes()
+    ).slice(-2)}:${("0" + now.getSeconds()).slice(-2)}`;
+
+    return new Promise<OHLCBars>((resolve, reject) => {
+      IBApiService.getHistoricalData(
+        conid,
+        endTime,
+        duration,
+        barSize,
+        "TRADES",
+      )
+        .then(data => resolve(data))
+        .catch(ibError => {
+          reject(new HttpError(500, ibError.error.message));
+        });
+    });
   }
 }

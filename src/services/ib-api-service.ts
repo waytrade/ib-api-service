@@ -8,11 +8,13 @@ import {
   AccountSummariesUpdate,
   AccountSummary,
 } from "../models/account-summary.model";
+import {OHLCBars} from "../models/bar";
 import {Contract} from "../models/contract.model";
 import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {APP_INSTANCE} from "../run";
 import {IBApiLoggerProxy} from "../utils/ib-api-logger-proxy";
+import {toDateTime} from "./ib-api-service.helper";
 
 /** A position ID. */
 type PositionID = string;
@@ -44,7 +46,8 @@ export class IBApiService {
   private static readonly subscriptions = new Set<Subscription>();
 
   /** Subject to signal updates on the account summaries. */
-  private static readonly accountSummaryUpdates = new Subject<AccountSummariesUpdate>();
+  private static readonly accountSummaryUpdates =
+    new Subject<AccountSummariesUpdate>();
 
   /** Map of all current positions, with positions id as key. */
   private static readonly positions = new MapExt<PositionID, Position>();
@@ -326,6 +329,58 @@ export class IBApiService {
       return (): void => {
         sub$?.unsubscribe();
       };
+    });
+  }
+
+  /** Get historical OHLC data. */
+  static getHistoricalData(
+    conId: number,
+    endTime: string,
+    duration: string,
+    barSize: string,
+    whatToShow: string,
+  ): Promise<OHLCBars> {
+    return new Promise<OHLCBars>((resolve, reject) => {
+      this.getContractDetails(conId)
+        .then(contractDetails => {
+          this.api
+            ?.getHistoricalData(
+              contractDetails.contract,
+              endTime,
+              duration,
+              barSize,
+              whatToShow,
+              1,
+              1,
+            )
+            .then(bars => {
+              const ohlc: OHLCBars = {bars: []};
+              bars.forEach(bar =>
+                ohlc.bars?.push({
+                  time: toDateTime(bar.time),
+                  open: bar.open,
+                  high: bar.high,
+                  low: bar.low,
+                  close: bar.close,
+                  volume: bar.volume,
+                  WAP: bar.WAP,
+                  count: bar.count,
+                }),
+              );
+              resolve(ohlc);
+            })
+            .catch(error => {
+              IBApiApp.error("getHistoricalData: " + error.error.message);
+              reject(error);
+            });
+        })
+        .catch(error => {
+          IBApiApp.error(
+            "getHistoricalData: getContractDetails returned " +
+              error.error.message,
+          );
+          reject(error);
+        });
     });
   }
 
