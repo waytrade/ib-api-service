@@ -70,7 +70,7 @@ jobs:
 
   publish-docker:
     name: Publish Docker Image
-    needs: publish-package
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
