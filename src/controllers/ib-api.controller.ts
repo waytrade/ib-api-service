@@ -45,28 +45,24 @@ export class IBApiController {
   }
 
   /** List of currently active account summary webhooks. */
-  private static accountSummaryHooks =
-    new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
-      (url, error): void => IBApiController.logFailedWebhook(url, error),
-    );
+  private static accountSummaryHooks = new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
+    (url, error): void => IBApiController.logFailedWebhook(url, error),
+  );
 
   /** List of currently active position list webhooks. */
-  private static positionsHooks =
-    new WebhookCallbackSubscriptions<PositionsUpdate>((url, error): void =>
-      IBApiController.logFailedWebhook(url, error),
-    );
+  private static positionsHooks = new WebhookCallbackSubscriptions<PositionsUpdate>(
+    (url, error): void => IBApiController.logFailedWebhook(url, error),
+  );
 
   /** List of currently active contract market data feed webhooks. */
-  private static contractMarketDataHooks =
-    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
-      IBApiController.logFailedWebhook(url, error),
-    );
+  private static contractMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
+    (url, error): void => IBApiController.logFailedWebhook(url, error),
+  );
 
   /** List of currently active fx market data feed webhooks. */
-  private static fxMarketDataHooks =
-    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
-      IBApiController.logFailedWebhook(url, error),
-    );
+  private static fxMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
+    (url, error): void => IBApiController.logFailedWebhook(url, error),
+  );
 
   //
   // Service functions
@@ -259,6 +255,7 @@ export class IBApiController {
     "The amount of time for which the data needs to be retrieved",
   )
   @queryParameter("barSize", String, true, "The size of the bar")
+  @queryParameter("endTime", String, false, "End time (now if undefined)")
   @responseBody(OHLCBars)
   static async getHistoricalData(
     request: MicroserviceRequest,
@@ -276,12 +273,17 @@ export class IBApiController {
       throw new HttpError(400);
     }
 
-    const now = new Date();
-    const endTime = `${now.getFullYear()}${("0" + (now.getMonth() + 1)).slice(
-      -2,
-    )}${("0" + now.getDate()).slice(-2)} ${("0" + now.getHours()).slice(-2)}:${(
-      "0" + now.getMinutes()
-    ).slice(-2)}:${("0" + now.getSeconds()).slice(-2)}`;
+    let endTime = request.queryParams.endTime as string;
+    if (!endTime) {
+      const now = new Date();
+      endTime = `${now.getFullYear()}${("0" + (now.getMonth() + 1)).slice(
+        -2,
+      )}${("0" + now.getDate()).slice(-2)} ${("0" + now.getHours()).slice(
+        -2,
+      )}:${("0" + now.getMinutes()).slice(-2)}:${("0" + now.getSeconds()).slice(
+        -2,
+      )}`;
+    }
 
     return new Promise<OHLCBars>((resolve, reject) => {
       IBApiService.getHistoricalData(
