@@ -16,7 +16,7 @@ import {
 } from "@waytrade/microservice-core";
 import HttpStatus from "http-status";
 import {firstValueFrom} from "rxjs";
-import {IBApiApp} from "..";
+import {IBApiApp as App} from "..";
 import {
   AccountSummariesUpdate,
   AccountSummaryCallbackSubscription,
@@ -41,7 +41,7 @@ import {IBApiService} from "../services/ib-api-service";
 export class IBApiController {
   /** Webhook failure callback. */
   private static logFailedWebhook(url: string, error: Error): void {
-    IBApiApp.warn("Failed to POST " + url + ": " + error.message);
+    App.warn("Failed to POST " + url + ": " + error.message);
   }
 
   /** List of currently active account summary webhooks. */
@@ -178,7 +178,7 @@ export class IBApiController {
   @summary("Get contract details.")
   @description("Get contract details of the contract id.")
   @queryParameter("conid", Number, true, "The IB contract id.")
-  @response(504, "Not connect to IB Gateway.")
+  @response(HttpStatus.BAD_REQUEST)
   @responseBody(ContractDetails)
   static async getContractDetails(
     request: MicroserviceRequest,
@@ -187,12 +187,19 @@ export class IBApiController {
 
     const conid = Number(request.queryParams.conid);
     if (conid === undefined || conid == NaN) {
-      throw new HttpError(400);
+      throw new HttpError(HttpStatus.BAD_REQUEST);
     }
 
     // request contract details
-
-    return await IBApiService.getContractDetails(conid);
+    return new Promise<ContractDetails>((resolve, reject) => {
+      IBApiService.getContractDetails(Number(conid))
+        .then(result => resolve(result))
+        .catch(err => {
+          const msg = `getContractDetails(): ${err.code} - ${err.error.message}`;
+          App.error(msg);
+          reject(new HttpError(HttpStatus.BAD_REQUEST, msg));
+        });
+    });
   }
 
   @post("/marketData")

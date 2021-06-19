@@ -1,6 +1,7 @@
 import * as IB from "@stoqey/ib";
 import {MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
+import {exit} from "process";
 import {firstValueFrom, Observable, Subject, Subscription} from "rxjs";
 import {debounceTime, map, take} from "rxjs/operators";
 import {IBApiApp} from "..";
@@ -46,8 +47,7 @@ export class IBApiService {
   private static readonly subscriptions = new Set<Subscription>();
 
   /** Subject to signal updates on the account summaries. */
-  private static readonly accountSummaryUpdates =
-    new Subject<AccountSummariesUpdate>();
+  private static readonly accountSummaryUpdates = new Subject<AccountSummariesUpdate>();
 
   /** Map of all current positions, with positions id as key. */
   private static readonly positions = new MapExt<PositionID, Position>();
@@ -128,6 +128,7 @@ export class IBApiService {
             if (connectionTries > 2) {
               IBApiApp.error("Lost connection to IB Gateway, rebooting...");
               APP_INSTANCE.shutdown();
+              exit(1);
             }
             break;
         }

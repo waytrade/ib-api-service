@@ -1,14 +1,19 @@
 import * as IB from "@stoqey/ib";
 import {model, property} from "@waytrade/microservice-core";
+import {Contract} from "./contract.model";
 
 /**
- * A contract on Interactive Brokers.
+ * Contract details on Interactive Brokers.
  */
 @model("Details of a contract on Interactive Brokers.")
 export class ContractDetails {
   constructor(contract: IB.ContractDetails) {
     Object.assign(this, contract);
   }
+
+  /** A fully-defined Contract object. */
+  @property("A fully-defined Contract object.")
+  contract?: Contract;
 
   /** The market name for this product. */
   @property("The market name for this product.")
