@@ -133,7 +133,7 @@ module.exports = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  testEnvironment: "<rootDir>/src/__tests__/nodb-test-environment.js",
+  testEnvironment: "<rootDir>/src/__tests__/nodb-test-environment.ts",
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
