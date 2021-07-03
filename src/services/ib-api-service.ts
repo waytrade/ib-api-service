@@ -7,7 +7,7 @@ import {debounceTime, map, take} from "rxjs/operators";
 import {IBApiApp} from "..";
 import {
   AccountSummariesUpdate,
-  AccountSummary,
+  AccountSummary
 } from "../models/account-summary.model";
 import {OHLCBars} from "../models/bar";
 import {Contract} from "../models/contract.model";
@@ -21,7 +21,7 @@ import {toDateTime} from "./ib-api-service.helper";
 type PositionID = string;
 
 /** Debounce time on market data ticks. */
-const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 100;
+const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
 
 /**
  * The Interactive Brokers TWS API Service
@@ -47,7 +47,8 @@ export class IBApiService {
   private static readonly subscriptions = new Set<Subscription>();
 
   /** Subject to signal updates on the account summaries. */
-  private static readonly accountSummaryUpdates = new Subject<AccountSummariesUpdate>();
+  private static readonly accountSummaryUpdates =
+    new Subject<AccountSummariesUpdate>();
 
   /** Map of all current positions, with positions id as key. */
   private static readonly positions = new MapExt<PositionID, Position>();
@@ -57,12 +58,6 @@ export class IBApiService {
 
   /** All account id that already have a PnL subscription. */
   private static readonly accountPnLSubscriptions = new Set<string>();
-
-  /** All position market data subscriptions, with positions id sa key. */
-  private static readonly positionsMarketDataSubscriptions = new Map<
-    string,
-    Subscription
-  >();
 
   /** All position PnL subscriptions, with positions id sa key. */
   private static readonly positionsPnLSubscriptions = new Map<
@@ -154,7 +149,6 @@ export class IBApiService {
 
     this.subscriptions.clear();
     this.accountPnLSubscriptions.clear();
-    this.positionsMarketDataSubscriptions.clear();
 
     // disconnect
 
@@ -472,13 +466,6 @@ export class IBApiService {
 
             this.positions.delete(id);
 
-            const marketDataSub = this.positionsMarketDataSubscriptions.get(id);
-            if (marketDataSub) {
-              this.subscriptions.delete(marketDataSub);
-              this.positionsMarketDataSubscriptions.delete(id);
-              marketDataSub.unsubscribe();
-            }
-
             const pnlSub = this.positionsPnLSubscriptions.get(id);
             if (pnlSub) {
               this.subscriptions.delete(pnlSub);
@@ -537,52 +524,6 @@ export class IBApiService {
               .then(details => {
                 currentPosition.details = {};
                 Object.assign(currentPosition.details, details);
-
-                // request market data
-
-                if (
-                  this.positionsMarketDataSubscriptions.has(id) ||
-                  !this.api
-                ) {
-                  return;
-                }
-
-                this.api.setMarketDataType(IB.MarketDataType.FROZEN);
-
-                const latest: MarketData = {};
-                const marketData$ = this.api
-                  ?.getMarketData(
-                    details.contract,
-                    "104,105,106,165,411",
-                    false,
-                    false,
-                  )
-                  .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
-                  .subscribe({
-                    error: (error: IB.IBApiNextError) => {
-                      IBApiApp.error("getPnLSingle: " + error.error.message);
-                    },
-                    next: update => {
-                      const changed: MarketData = {};
-                      this.updateMarketData(latest, update.all, changed);
-
-                      currentPosition.marketData =
-                        currentPosition.marketData ?? {};
-                      Object.assign(currentPosition.marketData, latest);
-
-                      this.positionUpdates.next({
-                        changed: [
-                          {
-                            id: id,
-                            marketData: changed,
-                          },
-                        ],
-                      });
-                    },
-                  });
-
-                this.positionsMarketDataSubscriptions.set(id, marketData$);
-                this.subscriptions.add(marketData$);
               })
               .catch(e => {
                 IBApiApp.error(

@@ -1,7 +1,6 @@
 import {arrayProperty, model, property} from "@waytrade/microservice-core";
 import {ContractDetails} from "./contract-details.model";
 import {Contract} from "./contract.model";
-import {MarketData} from "./market-data.model";
 
 /**
  * A position on an IBKR account.
@@ -40,10 +39,6 @@ export class Position {
   /** The current market value of the position. */
   @property("The current market value of the position.")
   marketValue?: number;
-
-  /** The position market data. */
-  @property("The position market data.")
-  marketData?: MarketData;
 }
 
 /**
