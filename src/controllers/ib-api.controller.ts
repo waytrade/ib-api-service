@@ -1,3 +1,4 @@
+import {BarSizeSetting} from "@stoqey/ib";
 import {
   callback,
   controller,
@@ -45,24 +46,28 @@ export class IBApiController {
   }
 
   /** List of currently active account summary webhooks. */
-  private static accountSummaryHooks = new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static accountSummaryHooks =
+    new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
+      (url, error): void => IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active position list webhooks. */
-  private static positionsHooks = new WebhookCallbackSubscriptions<PositionsUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static positionsHooks =
+    new WebhookCallbackSubscriptions<PositionsUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active contract market data feed webhooks. */
-  private static contractMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static contractMarketDataHooks =
+    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   /** List of currently active fx market data feed webhooks. */
-  private static fxMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  private static fxMarketDataHooks =
+    new WebhookCallbackSubscriptions<MarketDataUpdate>((url, error): void =>
+      IBApiController.logFailedWebhook(url, error),
+    );
 
   //
   // Service functions
@@ -275,7 +280,7 @@ export class IBApiController {
     if (duration === undefined) {
       throw new HttpError(400);
     }
-    const barSize = request.queryParams.barSize as string;
+    const barSize = request.queryParams.barSize as BarSizeSetting;
     if (barSize === undefined) {
       throw new HttpError(400);
     }

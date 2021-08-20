@@ -589,10 +589,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@stoqey/ib@^1.1.57":
-  version "1.1.57"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.1.57.tgz#3f2cfbae2cd4fbcb2f4ef6a37800e06d82f65ae1"
-  integrity sha512-LgKyme/g7XYkGWYzt9cc/jzkPZcJPLPvcrMOusQfNlhTC/+gJtQZIgb3xLRkQC8L7rnKNjW8/K0ocmEUkBRu2w==
+"@stoqey/ib@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.2.5.tgz#efbb8c8653740f443b91c007fa30716ee63c4059"
+  integrity sha512-RvPGyt0Cd5lGepUqr/0+0RcHHmwZ/dkhwFITDtfgCsM318sc0PEzImTbr7uBVDY/aBT9OFLJXWiESeMyjOIxmg==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"

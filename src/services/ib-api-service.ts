@@ -332,7 +332,7 @@ export class IBApiService {
     conId: number,
     endTime: string,
     duration: string,
-    barSize: string,
+    barSize: IB.BarSizeSetting,
     whatToShow: string,
   ): Promise<OHLCBars> {
     return new Promise<OHLCBars>((resolve, reject) => {
@@ -607,8 +607,8 @@ export class IBApiService {
     update: IB.MarketDataTicks,
     diff?: MarketData,
   ): void {
-    const allRecord = <Record<string, number>>all;
-    const diffRecord = <Record<string, number>>diff;
+    const allRecord = <Record<string, number | undefined>>all;
+    const diffRecord = <Record<string, number | undefined>>diff;
 
     update.forEach((value, type) => {
       let propName =

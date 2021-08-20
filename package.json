@@ -36,7 +36,7 @@
     "node": ">=14.15.4"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.1.57",
+    "@stoqey/ib": "^1.2.5",
     "@types/lru-cache": "^5.1.0",
     "@waytrade/microservice-core": "^0.1.32",
     "lru-cache": "^6.0.0",
