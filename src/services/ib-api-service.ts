@@ -1,72 +1,62 @@
 import * as IB from "@stoqey/ib";
-import {MapExt, service} from "@waytrade/microservice-core";
+import {DiffTools, inject, MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {exit} from "process";
-import {firstValueFrom, Observable, Subject, Subscription} from "rxjs";
-import {debounceTime, map, take} from "rxjs/operators";
-import {IBApiApp} from "..";
 import {
-  AccountSummariesUpdate,
-  AccountSummary
-} from "../models/account-summary.model";
-import {OHLCBars} from "../models/bar";
-import {Contract} from "../models/contract.model";
+  auditTime,
+  firstValueFrom,
+  map,
+  Observable,
+  Subject,
+  Subscription,
+  takeUntil,
+} from "rxjs";
+import {IBApiApp} from "../app";
+import {AccountSummary} from "../models/account-summary.model";
 import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
-import {APP_INSTANCE} from "../run";
 import {IBApiLoggerProxy} from "../utils/ib-api-logger-proxy";
-import {toDateTime} from "./ib-api-service.helper";
-
-/** A position ID. */
-type PositionID = string;
+import {IBApiServiceHelper as Helper} from "./ib-api-service.helper";
 
 /** Debounce time on market data ticks. */
 const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
+
+/**
+ * Account summary tag values, make suer this is in sync with
+ * AccountSummary model.
+ *
+ * Ecented AccountSummary model if you extend this!!
+ */
+export const ACCOUNT_SUMMARY_TAGS = [
+  "NetLiquidation",
+  "TotalCashValue",
+  "SettledCash",
+  "BuyingPower",
+  "GrossPositionValue",
+  "InitMarginReq",
+  "MaintMarginReq",
+  "FullInitMarginReq",
+  "FullMaintMarginReq",
+  "FullAvailableFunds",
+  "FullExcessLiquidity",
+];
 
 /**
  * The Interactive Brokers TWS API Service
  */
 @service()
 export class IBApiService {
+  @inject("IBApiApp")
+  private app!: IBApiApp;
+
   /** The [[IBApiNext]] instance. */
-  private static api?: IB.IBApiNext;
+  private api!: IB.IBApiNext;
 
   /** Subscription on connection date. */
-  private static connectionState$?: Subscription;
+  private connectionState$?: Subscription;
 
-  /** Map of all current account summaries, with account id as key. */
-  private static readonly accountSummaries = new MapExt<
-    IB.AccountId,
-    AccountSummary
-  >();
-
-  /**
-   * List of all currently active subscription.
-   * Will be unsubscribed during service shutdown.
-   */
-  private static readonly subscriptions = new Set<Subscription>();
-
-  /** Subject to signal updates on the account summaries. */
-  private static readonly accountSummaryUpdates =
-    new Subject<AccountSummariesUpdate>();
-
-  /** Map of all current positions, with positions id as key. */
-  private static readonly positions = new MapExt<PositionID, Position>();
-
-  /** Subject to signal updates on the positions. */
-  private static readonly positionUpdates = new Subject<PositionsUpdate>();
-
-  /** All account id that already have a PnL subscription. */
-  private static readonly accountPnLSubscriptions = new Set<string>();
-
-  /** All position PnL subscriptions, with positions id sa key. */
-  private static readonly positionsPnLSubscriptions = new Map<
-    string,
-    Subscription
-  >();
-
-  /** Cache of a requested contract details, with conid as key. */
-  private static readonly contractDetails = new LruCache<
+  /** Cache of a requested contract details, with conId as key. */
+  private readonly contractDetailsCache = new LruCache<
     number,
     IB.ContractDetails
   >({
@@ -74,28 +64,26 @@ export class IBApiService {
   });
 
   /** Start the service. */
-  static async boot(): Promise<void> {
+  start(): void {
     // init IBApiNext
 
-    this.shutdown();
-
-    if (!IBApiApp.config.IB_GATEWAY_PORT) {
+    if (!this.app.config.IB_GATEWAY_PORT) {
       throw new Error("IB_GATEWAY_PORT not configured.");
     }
 
-    if (!IBApiApp.config.IB_GATEWAY_HOST) {
+    if (!this.app.config.IB_GATEWAY_HOST) {
       throw new Error("IB_GATEWAY_HOST not configured.");
     }
 
     this.api = new IB.IBApiNext({
-      port: IBApiApp.config.IB_GATEWAY_PORT,
-      host: IBApiApp.config.IB_GATEWAY_HOST,
-      logger: new IBApiLoggerProxy(IBApiApp.context),
+      port: this.app.config.IB_GATEWAY_PORT,
+      host: this.app.config.IB_GATEWAY_HOST,
+      logger: new IBApiLoggerProxy(this.app),
       connectionWatchdogInterval: 30,
       reconnectInterval: 5000,
     });
 
-    switch (IBApiApp.config.LOG_LEVEL) {
+    switch (this.app.config.LOG_LEVEL) {
       case "debug":
         this.api.logLevel = IB.LogLevel.DETAIL;
         break;
@@ -112,7 +100,9 @@ export class IBApiService {
 
     // exit on connection loss
 
+    const mayReconnectTries = 5;
     let connectionTries = 0;
+
     this.connectionState$ = this.api.connectionState.subscribe({
       next: state => {
         switch (state) {
@@ -120,9 +110,9 @@ export class IBApiService {
             connectionTries++;
             break;
           case IB.ConnectionState.Disconnected:
-            if (connectionTries > 2) {
-              IBApiApp.error("Lost connection to IB Gateway, rebooting...");
-              APP_INSTANCE.shutdown();
+            if (connectionTries > mayReconnectTries) {
+              this.app.error("Lost connection to IB Gateway, rebooting...");
+              this.app.stop();
               exit(1);
             }
             break;
@@ -132,498 +122,324 @@ export class IBApiService {
 
     // connect to IB Gateway
 
-    this.api.connect();
-
-    // subscribe on positions
-
-    this.subscribePositions();
-    this.subscribeAccountSummaries();
-    this.subscribePnL();
+    this.api.connect(0);
   }
 
-  /** Shutdown the service. */
-  static shutdown(): void {
-    // unsubscribe
-
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-
-    this.subscriptions.clear();
-    this.accountPnLSubscriptions.clear();
-
-    // disconnect
-
+  /** Stop the service. */
+  stop(): void {
     this.connectionState$?.unsubscribe();
-
-    if (this.api) {
-      this.api.disconnect();
-      delete this.api;
-    }
+    delete this.connectionState$;
+    this.api?.disconnect();
   }
 
-  /**  Get account summaries updates. */
-  static getAccountSummaries(): Observable<AccountSummariesUpdate> {
-    return new Observable(subscriber => {
-      // replay current account summaries
-
-      subscriber.next({
-        all: Array.from(this.accountSummaries.values()),
+  /** Observe the account summaries. */
+  get accountSummaries(): Observable<AccountSummary[]> {
+    return new Observable<AccountSummary[]>(res => {
+      let tags = "";
+      ACCOUNT_SUMMARY_TAGS.forEach(tag => {
+        tags = tags + tag + ",";
       });
+      tags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
 
-      // subscribe on account summary updates
+      const cancel = new Subject();
+      const subscribedPnlAccounts = new Set<string>();
 
-      const sub$ = this.accountSummaryUpdates.subscribe({
-        next: update => {
-          subscriber.next(update);
-        },
-      });
+      let firstEvent = true;
+
+      this.api
+        ?.getAccountSummary("All", tags)
+        .pipe(takeUntil(cancel))
+        .subscribe({
+          error: (error: IB.IBApiNextError) => {
+            this.app.error(
+              "IBApiNext.getAccountSummary: " + error.error.message,
+            );
+          },
+          next: update => {
+            // collect updated
+
+            const updated = new Map([
+              ...(update.changed?.entries() ?? []),
+              ...(update.added?.entries() ?? []),
+            ]);
+
+            const changed = new MapExt<string, AccountSummary>();
+            updated.forEach((tagValues, accountId) => {
+              Helper.colllectAccountSummaryTagValues(
+                accountId,
+                tagValues,
+                this.app.config.BASE_CURRENCY ?? "",
+                changed,
+              );
+            });
+
+            // add baseCurrency to first event
+
+            const changedArray = Array.from(changed.values());
+            if (firstEvent) {
+              changedArray.forEach(
+                v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
+              );
+              firstEvent = false;
+            }
+
+            // emit update event
+
+            if (changedArray.length) {
+              res.next(changedArray);
+            }
+
+            // subscribe on account PnLs
+
+            updated.forEach((_tagValues, accountId) => {
+              if (subscribedPnlAccounts.has(accountId)) {
+                return;
+              }
+              subscribedPnlAccounts.add(accountId);
+
+              this.api
+                ?.getPnL(accountId)
+                .pipe(takeUntil(cancel))
+                .subscribe({
+                  error: (error: IB.IBApiNextError) => {
+                    this.app.error(
+                      `getPnL(${accountId}): ${error.error.message}`,
+                    );
+                    subscribedPnlAccounts.delete(accountId);
+                  },
+                  next: pnl => {
+                    const changedSummary: AccountSummary = {
+                      account: accountId,
+                      dailyPnL: pnl.dailyPnL,
+                      realizedPnL: pnl.realizedPnL,
+                      unrealizedPnL: pnl.unrealizedPnL,
+                    };
+                    res.next([changedSummary]);
+                  },
+                });
+            });
+          },
+        });
 
       return (): void => {
-        sub$?.unsubscribe();
+        cancel.next(true);
+        cancel.complete();
       };
     });
   }
 
-  /**  Get position updates. */
-  static getPositions(): Observable<PositionsUpdate> {
-    return new Observable<PositionsUpdate>(subscriber => {
-      // replay current positions
+  /** Observe the account positions. */
+  get positions(): Observable<PositionsUpdate> {
+    return new Observable<PositionsUpdate>(res => {
+      const cancel = new Subject();
 
-      subscriber.next({
-        all: Array.from(this.positions.values()),
-      });
+      const pnlSubscriptions = new Map<string, Subscription>();
 
-      // subscribe on position updates
+      this.api
+        ?.getPositions()
+        .pipe(takeUntil(cancel))
+        .subscribe({
+          error: (error: IB.IBApiNextError) => {
+            this.app.error("IBApiNext.getPositions: " + error.error.message);
+          },
+          next: update => {
+            const changed = new MapExt<string, Position>();
 
-      const sub$ = this.positionUpdates.subscribe({
-        next: update => subscriber.next(update),
-      });
+            // collect updated
+
+            const updated = new Map([
+              ...(update.changed?.entries() ?? []),
+              ...(update.added?.entries() ?? []),
+            ]);
+
+            updated.forEach((positions, accountId) => {
+              positions.forEach(ibPosition => {
+                const posId = Helper.formatPositionId(
+                  accountId,
+                  ibPosition.contract.conId,
+                );
+                const position = new Position({
+                  id: posId,
+                  conid: "" + ibPosition.contract.conId,
+                  pos: ibPosition.pos,
+                });
+
+                if (ibPosition.avgCost) {
+                  position.avgCost = ibPosition.avgCost;
+                }
+
+                changed.set(posId, position);
+              });
+            });
+
+            // collect closed
+
+            const removedIds: string[] = [];
+            update.removed?.forEach((positions, account) => {
+              positions.forEach(pos => {
+                removedIds.push(
+                  Helper.formatPositionId(account, pos.contract.conId),
+                );
+              });
+            });
+
+            // emit update event
+
+            if (changed.size || removedIds.length) {
+              res.next({
+                changed: changed.size
+                  ? Array.from(changed.values())
+                  : undefined,
+                closed: removedIds.length ? removedIds : undefined,
+              });
+            }
+
+            // subscribe on PnL
+
+            updated.forEach((positions, accountId) => {
+              positions.forEach(ibPosition => {
+                const posId = Helper.formatPositionId(
+                  accountId,
+                  ibPosition.contract.conId,
+                );
+
+                if (pnlSubscriptions.has(posId)) {
+                  return;
+                }
+
+                const sub = this.api
+                  ?.getPnLSingle(
+                    ibPosition.account,
+                    "",
+                    ibPosition.contract.conId ?? 0,
+                  )
+                  .pipe(takeUntil(cancel))
+                  .subscribe({
+                    error: (error: IB.IBApiNextError) => {
+                      pnlSubscriptions.delete(posId);
+                      this.app.error(
+                        `getPnLSingle(${ibPosition.contract.symbol}): ${error.error.message}`,
+                      );
+                    },
+                    next: pnl => {
+                      res.next({
+                        changed: [
+                          {
+                            id: posId,
+                            dailyPnL: pnl.dailyPnL,
+                            marketValue: pnl.marketValue,
+                            pos: pnl.position,
+                            realizedPnL: pnl.realizedPnL,
+                            unrealizedPnL: pnl.unrealizedPnL,
+                          },
+                        ],
+                      });
+                    },
+                  });
+
+                pnlSubscriptions.set(posId, sub);
+              });
+            });
+
+            removedIds.forEach(id => {
+              pnlSubscriptions.get(id)?.unsubscribe();
+            });
+          },
+        });
 
       return (): void => {
-        sub$?.unsubscribe();
+        cancel.next(true);
+        cancel.complete();
       };
     });
   }
 
-  /**  Get details about a contract. */
-  static getContractDetails(conId: number): Promise<IB.ContractDetails> {
-    if (!this.api) {
-      throw new Error("Service not initialized.");
-    }
-    const details = this.contractDetails.get(conId);
+  /** Get the contract details for a ficen conid */
+  getContractDetails(conId: number): Promise<IB.ContractDetails> {
+    const details = this.contractDetailsCache.get(conId);
     if (details) {
       return new Promise<IB.ContractDetails>(resolve => resolve(details));
     }
 
     return firstValueFrom(
       this.api?.getContractDetails({conId}).pipe(
-        take(1),
         map((v: IB.ContractDetailsUpdate) => {
-          this.contractDetails.set(conId, v.all[0]);
+          this.contractDetailsCache.set(conId, v.all[0]);
           return v.all[0];
         }),
       ),
     );
   }
 
-  /** Get an Observable to receive market data of a contract. */
-  static getMarketData(conId: number): Observable<MarketDataUpdate> {
+  /** Get market data updates for the given conId.  */
+  getMarketData(conId: number): Observable<MarketDataUpdate> {
     return new Observable<MarketDataUpdate>(subscriber => {
-      const api = this.api;
-      if (!api) {
-        subscriber.error("Service not initialized.");
-        return;
-      }
+      const cancel = new Subject();
+      const sendInterval: NodeJS.Timeout | undefined = undefined;
 
-      let sub$: Subscription | undefined = undefined;
-      let unsubscribed = false;
+      // lookup contract details from conId
 
       this.getContractDetails(conId)
         .then(details => {
-          if (unsubscribed) {
-            return;
-          }
-          api.setMarketDataType(IB.MarketDataType.FROZEN);
-          const latest: MarketData = {};
-          sub$ = api
+          this.api.setMarketDataType(IB.MarketDataType.FROZEN);
+
+          // subscribe on market data
+
+          const lastMarketData: MarketData = {};
+
+          this.api
             .getMarketData(
               details.contract,
               "104,105,106,165,411",
               false,
               false,
             )
-            .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
+            .pipe(
+              takeUntil(cancel),
+              auditTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS),
+            )
+            // eslint-disable-next-line rxjs/no-ignored-subscription
             .subscribe({
               next: update => {
-                const changed: MarketData = {};
-                this.updateMarketData(latest, update.all, changed);
-                subscriber.next({
-                  conId: details.contract.conId,
-                  marketData: changed,
-                });
+                const currentMarketData = Helper.marketDataTicksToModel(
+                  update.all,
+                );
+                const changedMarketData = DiffTools.diff(
+                  lastMarketData,
+                  currentMarketData,
+                ).changed;
+
+                Object.assign(lastMarketData, currentMarketData);
+
+                if (changedMarketData) {
+                  subscriber.next({
+                    conId: details.contract.conId,
+                    data: changedMarketData,
+                  });
+                }
               },
               error: (error: IB.IBApiNextError) => {
-                IBApiApp.error("getMarketData: " + error.error.message);
+                this.app.error(
+                  `getMarketData(${details.contract.symbol}) failed with ${error.error.message}`,
+                );
+                subscriber.error(new Error(error.error.message));
               },
             });
         })
         .catch(e => {
-          IBApiApp.error(
+          this.app.error(
             `getContractDetails(${conId}) failed with: ${e.error.message}`,
           );
-          subscriber.error(e);
+          subscriber.error(new Error(e.error.message));
         });
 
       return (): void => {
-        unsubscribed = true;
-        sub$?.unsubscribe();
-      };
-    });
-  }
-
-  /** Get an Observable to receive FX spot-market data. */
-  static getFxMarketData(
-    baseCurrency: string,
-    fxCurrency: string,
-  ): Observable<MarketDataUpdate> {
-    return new Observable<MarketDataUpdate>(subscriber => {
-      const api = this.api;
-      if (!api) {
-        subscriber.error("Service not initialized.");
-        return;
-      }
-
-      api.setMarketDataType(IB.MarketDataType.FROZEN);
-      const latest: MarketData = {};
-      const sub$ = api
-        .getMarketData(
-          {
-            symbol: baseCurrency,
-            currency: fxCurrency,
-            exchange: "IDEALPRO",
-            secType: IB.SecType.CASH,
-          },
-          "",
-          false,
-          false,
-        )
-        .pipe(debounceTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS))
-        .subscribe({
-          next: update => {
-            const changed: MarketData = {};
-            this.updateMarketData(latest, update.all, changed);
-            subscriber.next({
-              fxPair: baseCurrency + fxCurrency,
-              marketData: changed,
-            });
-          },
-          error: (error: IB.IBApiNextError) => {
-            IBApiApp.error("getMarketData: " + error.error.message);
-          },
-        });
-
-      return (): void => {
-        sub$?.unsubscribe();
-      };
-    });
-  }
-
-  /** Get historical OHLC data. */
-  static getHistoricalData(
-    conId: number,
-    endTime: string,
-    duration: string,
-    barSize: IB.BarSizeSetting,
-    whatToShow: string,
-  ): Promise<OHLCBars> {
-    return new Promise<OHLCBars>((resolve, reject) => {
-      this.getContractDetails(conId)
-        .then(contractDetails => {
-          this.api
-            ?.getHistoricalData(
-              contractDetails.contract,
-              endTime,
-              duration,
-              barSize,
-              whatToShow,
-              1,
-              1,
-            )
-            .then(bars => {
-              const ohlc: OHLCBars = {bars: []};
-              bars.forEach(bar =>
-                ohlc.bars?.push({
-                  time: toDateTime(bar.time),
-                  open: bar.open,
-                  high: bar.high,
-                  low: bar.low,
-                  close: bar.close,
-                  volume: bar.volume,
-                  WAP: bar.WAP,
-                  count: bar.count,
-                }),
-              );
-              resolve(ohlc);
-            })
-            .catch(error => {
-              IBApiApp.error("getHistoricalData: " + error.error.message);
-              reject(error);
-            });
-        })
-        .catch(error => {
-          IBApiApp.error(
-            "getHistoricalData: getContractDetails returned " +
-              error.error.message,
-          );
-          reject(error);
-        });
-    });
-  }
-
-  /** Subscribe on account summaries. */
-  private static subscribeAccountSummaries(): void {
-    let TAGS =
-      "NetLiquidation,TotalCashValue,SettledCash,BuyingPower," +
-      "GrossPositionValue,InitMarginReq,MaintMarginReq,FullInitMarginReq," +
-      "FullMaintMarginReq,FullAvailableFunds,FullExcessLiquidity";
-    TAGS = TAGS + `,$LEDGER:${IBApiApp.config.BASE_CURRENCY}`;
-    const sub$ = this.api?.getAccountSummary("All", TAGS).subscribe({
-      error: (error: IB.IBApiNextError) => {
-        IBApiApp.error("getAccountSummary: " + error.error.message);
-      },
-      next: update => {
-        // update account summaries list
-
-        this.accountSummaries.clear();
-        this.updateAccountSummaries(this.accountSummaries, update.all);
-
-        // send changed to subscribers
-
-        const changed = new MapExt<string, AccountSummary>();
-        this.updateAccountSummaries(changed, update.changed);
-        this.updateAccountSummaries(changed, update.added);
-
-        this.accountSummaryUpdates.next({
-          changed: Array.from(changed.values()),
-        });
-      },
-    });
-    if (sub$) {
-      this.subscriptions.add(sub$);
-    }
-  }
-
-  /** Subscribe on account summaries. */
-  private static subscribePnL(): void {
-    const sub$ = this.accountSummaryUpdates.subscribe({
-      next: update => {
-        update.changed?.forEach(accountSummary => {
-          const account = accountSummary.account;
-          if (!account) {
-            return;
-          }
-          if (!this.accountPnLSubscriptions.has(account)) {
-            const pnlSub$ = this.api?.getPnL(account).subscribe({
-              error: (error: IB.IBApiNextError) => {
-                IBApiApp.error("getPnL: " + error.error.message);
-              },
-              next: pnl => {
-                const summary = this.accountSummaries.get(account);
-                if (summary) {
-                  Object.assign(summary, pnl);
-                  this.accountSummaryUpdates.next({
-                    changed: [summary],
-                  });
-                }
-              },
-            });
-            if (pnlSub$) {
-              this.subscriptions.add(pnlSub$);
-              this.accountPnLSubscriptions.add(account);
-            }
-          }
-        });
-      },
-    });
-    if (sub$) {
-      this.subscriptions.add(sub$);
-    }
-  }
-
-  /** Subscribe on positions. */
-  private static subscribePositions(): void {
-    const sub$ = this.api?.getPositions().subscribe({
-      error: (error: IB.IBApiNextError) => {
-        IBApiApp.error("getPositions: " + error.error.message);
-      },
-      next: update => {
-        // remove closed positions
-
-        const closed: string[] = [];
-        update.removed?.forEach(positions => {
-          positions.forEach(pos => {
-            const id = `${pos.account}:${pos.contract.conId}`;
-            closed.push(id);
-
-            this.positions.delete(id);
-
-            const pnlSub = this.positionsPnLSubscriptions.get(id);
-            if (pnlSub) {
-              this.subscriptions.delete(pnlSub);
-              this.positionsPnLSubscriptions.delete(id);
-              pnlSub.unsubscribe();
-            }
-          });
-        });
-
-        this.updatePositions(this.positions, update.all);
-
-        // request details and market data on newly added positions
-
-        update.added?.forEach(positions => {
-          positions.forEach(pos => {
-            if (!pos.contract.conId) {
-              return;
-            }
-            const id = `${pos.account}:${pos.contract.conId}`;
-            const currentPosition = this.positions.get(id);
-            if (!currentPosition) {
-              return;
-            }
-
-            // request PnL
-
-            if (!this.positionsPnLSubscriptions.has(id)) {
-              const pnl$ = this.api
-                ?.getPnLSingle(pos.account, "", pos.contract.conId)
-                .subscribe({
-                  error: (error: IB.IBApiNextError) => {
-                    IBApiApp.error("getPnLSingle: " + error.error.message);
-                  },
-                  next: pnl => {
-                    const changed: Position = {id: id};
-                    changed.marketValue = pnl.marketValue;
-                    changed.pos = pnl.position;
-                    changed.dailyPnL = pnl.dailyPnL;
-                    changed.unrealizedPnL = pnl.unrealizedPnL;
-                    changed.realizedPnL = pnl.realizedPnL;
-                    Object.assign(currentPosition, changed);
-                    this.positionUpdates.next({
-                      changed: [changed],
-                    });
-                  },
-                });
-              if (pnl$) {
-                this.positionsPnLSubscriptions.set(id, pnl$);
-                this.subscriptions.add(pnl$);
-              }
-            }
-
-            // request details
-
-            this.getContractDetails(pos.contract.conId)
-              .then(details => {
-                currentPosition.details = {};
-                Object.assign(currentPosition.details, details);
-              })
-              .catch(e => {
-                IBApiApp.error(
-                  `getContractDetails(${pos.contract.conId}) failed with: ${e.error.message}`,
-                );
-              });
-          });
-        });
-
-        // send changed to subscribers
-
-        const changed = new MapExt<PositionID, Position>();
-        this.updatePositions(changed, update.added);
-        this.updatePositions(changed, update.changed);
-
-        this.positionUpdates.next({
-          changed: Array.from(changed.values()),
-          closed,
-        });
-      },
-    });
-    if (sub$) {
-      this.subscriptions.add(sub$);
-    }
-  }
-
-  /** Update a map of account summaries with values as received from IBApi. */
-  private static updateAccountSummaries(
-    all: Map<string, AccountSummary>,
-    update?: IB.AccountSummaries,
-  ): void {
-    update?.forEach((tagValues, account) => {
-      const current = all.get(account) ?? {};
-      const updated: AccountSummary = {
-        account,
-        baseCurrency: IBApiApp.config.BASE_CURRENCY,
-      };
-
-      tagValues.forEach((values, tag) => {
-        const firstEntry = values.entries().next();
-        if (firstEntry.done) {
-          // we only handle first currency on list
-          return;
+        cancel.next(true);
+        cancel.complete();
+        if (sendInterval) {
+          clearInterval(sendInterval);
         }
-
-        const propName = tag[0].toLowerCase() + tag.substr(1);
-        const value = (<IB.AccountSummaryValue>firstEntry.value[1]).value;
-
-        (<Record<string, number>>updated)[propName] = Number(value);
-      });
-
-      Object.assign(current, updated);
-      all.set(account, current);
-    });
-  }
-
-  /** Update a map of positions with values as received from IBApi. */
-  private static updatePositions(
-    all: Map<string, Position>,
-    update?: IB.AccountPositions,
-  ): void {
-    update?.forEach((ibPositions, accountId) => {
-      ibPositions.forEach(ibPosition => {
-        const id = `${accountId}:${ibPosition.contract.conId}`;
-        const current = all.get(id) ?? new Position();
-        const updated: Position = {
-          id: id,
-          pos: ibPosition.pos,
-          avgCost: ibPosition.avgCost,
-          contract: new Contract(ibPosition.contract),
-        };
-        Object.assign(current, updated);
-        all.set(id, current);
-      });
-    });
-  }
-
-  /** Update a MarketData model with values as received from IBApi. */
-  private static updateMarketData(
-    all: MarketData,
-    update: IB.MarketDataTicks,
-    diff?: MarketData,
-  ): void {
-    const allRecord = <Record<string, number | undefined>>all;
-    const diffRecord = <Record<string, number | undefined>>diff;
-
-    update.forEach((value, type) => {
-      let propName =
-        type > IB.IBApiNextTickType.API_NEXT_FIRST_TICK_ID
-          ? IB.IBApiNextTickType[type]
-          : IB.IBApiTickType[type];
-      if (propName.startsWith("DELAYED_")) {
-        propName = propName.substr("DELAYED_".length);
-      }
-      if (allRecord[propName] !== value.value) {
-        allRecord[propName] = value.value;
-        if (diff) {
-          diffRecord[propName] = value.value;
-        }
-      }
+      };
     });
   }
 }

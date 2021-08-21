@@ -390,7 +390,7 @@ export class MarketDataUpdate {
 
   /** The market data. */
   @property("The market data.")
-  marketData?: MarketData;
+  data?: MarketData;
 }
 
 /**
