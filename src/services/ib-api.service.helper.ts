@@ -2,7 +2,7 @@ import * as IB from "@stoqey/ib";
 import {MapExt} from "@waytrade/microservice-core";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
-import {ACCOUNT_SUMMARY_TAGS} from "./ib-api-service";
+import {ACCOUNT_SUMMARY_TAGS} from "./ib-api.service";
 
 /**
  * Collection of helper functions used by IBApiService.
@@ -38,7 +38,7 @@ export class IBApiServiceHelper {
   ): void {
     const accountSummary = all.getOrAdd(
       accountId,
-      () => new AccountSummary(accountId),
+      () => new AccountSummary({account: accountId}),
     );
     tagValues.forEach((summaryValues, key) => {
       if (ACCOUNT_SUMMARY_TAGS.find(v => v === key)) {

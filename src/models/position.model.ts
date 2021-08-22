@@ -15,7 +15,7 @@ export class Position {
 
   /** The position's contract id. */
   @property("The position's contract id.")
-  conid?: string;
+  conId?: string;
 
   /** The number of positions held. */
   @property("The number of positions held.")

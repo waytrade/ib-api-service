@@ -16,7 +16,7 @@ import {AccountSummary} from "../models/account-summary.model";
 import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiLoggerProxy} from "../utils/ib-api-logger-proxy";
-import {IBApiServiceHelper as Helper} from "./ib-api-service.helper";
+import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
 
 /** Debounce time on market data ticks. */
 const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
@@ -234,6 +234,7 @@ export class IBApiService {
       const cancel = new Subject();
 
       const pnlSubscriptions = new Map<string, Subscription>();
+      const previosPositions = new MapExt<string, Position>();
 
       this.api
         ?.getPositions()
@@ -254,21 +255,33 @@ export class IBApiService {
 
             updated.forEach((positions, accountId) => {
               positions.forEach(ibPosition => {
+                if (!ibPosition.pos) {
+                  return;
+                }
+
                 const posId = Helper.formatPositionId(
                   accountId,
                   ibPosition.contract.conId,
                 );
-                const position = new Position({
-                  id: posId,
-                  conid: "" + ibPosition.contract.conId,
-                  pos: ibPosition.pos,
+
+                let hasChanged = false;
+                const prevPositions = previosPositions.getOrAdd(posId, () => {
+                  hasChanged = true;
+                  return new Position({
+                    id: posId,
+                    conId: "" + ibPosition.contract.conId,
+                    pos: ibPosition.pos,
+                  });
                 });
 
-                if (ibPosition.avgCost) {
-                  position.avgCost = ibPosition.avgCost;
+                if (prevPositions.avgCost !== ibPosition.avgCost) {
+                  prevPositions.avgCost = ibPosition.avgCost;
+                  hasChanged = true;
                 }
 
-                changed.set(posId, position);
+                if (hasChanged) {
+                  changed.set(posId, prevPositions);
+                }
               });
             });
 
@@ -277,6 +290,11 @@ export class IBApiService {
             const removedIds: string[] = [];
             update.removed?.forEach((positions, account) => {
               positions.forEach(pos => {
+                const conId = Helper.formatPositionId(
+                  account,
+                  pos.contract.conId,
+                );
+                previosPositions.delete(conId);
                 removedIds.push(
                   Helper.formatPositionId(account, pos.contract.conId),
                 );
@@ -298,6 +316,10 @@ export class IBApiService {
 
             updated.forEach((positions, accountId) => {
               positions.forEach(ibPosition => {
+                if (!ibPosition.pos) {
+                  return;
+                }
+
                 const posId = Helper.formatPositionId(
                   accountId,
                   ibPosition.contract.conId,
@@ -322,18 +344,31 @@ export class IBApiService {
                       );
                     },
                     next: pnl => {
-                      res.next({
-                        changed: [
-                          {
-                            id: posId,
-                            dailyPnL: pnl.dailyPnL,
-                            marketValue: pnl.marketValue,
-                            pos: pnl.position,
-                            realizedPnL: pnl.realizedPnL,
-                            unrealizedPnL: pnl.unrealizedPnL,
-                          },
-                        ],
-                      });
+                      const prePos = previosPositions.get(posId);
+                      if (!prePos) {
+                        return;
+                      }
+                      const changedPos: Position = {id: posId};
+                      if (prePos?.dailyPnL !== pnl.dailyPnL) {
+                        changedPos.dailyPnL = pnl.dailyPnL;
+                      }
+                      if (prePos?.marketValue !== pnl.marketValue) {
+                        changedPos.marketValue = pnl.marketValue;
+                      }
+                      if (prePos?.pos !== pnl.position) {
+                        changedPos.pos = pnl.position;
+                      }
+                      if (prePos?.realizedPnL !== pnl.realizedPnL) {
+                        changedPos.realizedPnL = pnl.realizedPnL;
+                      }
+                      if (prePos?.unrealizedPnL !== pnl.unrealizedPnL) {
+                        changedPos.unrealizedPnL = pnl.unrealizedPnL;
+                      }
+                      if (Object.keys(changedPos).length > 1) {
+                        res.next({
+                          changed: [changedPos],
+                        });
+                      }
                     },
                   });
 

@@ -1,6 +1,6 @@
 {
   "name": "@waytrade/ib-api-service",
-  "version": "0.1.51",
+  "version": "0.9.0",
   "description": "Interactive Brokers API Service",
   "author": "Matthias Frener <matthias.frener@gmail.com>",
   "license": "MIT",
@@ -9,27 +9,23 @@
     "url": "https://github.com/waytrade/ib-api-service.git"
   },
   "files": [
-    "dist/",
     "openapi.json"
   ],
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo .eslintcache",
     "build": "yarn clean && yarn tsc",
     "build:watch": "tsc --watch",
-    "lint": "yarn eslint && yarn prettier:check",
-    "lint:fix": "yarn eslint:fix && yarn prettier:fix",
+    "lint": "yarn eslint",
+    "lint:fix": "yarn eslint:fix",
     "test": "jest --reporters=default --useStderr --detectOpenHandles --verbose",
-    "prettier:cli": "prettier \"**/*.ts\"",
-    "prettier:check": "yarn prettier:cli -l",
-    "prettier:fix": "yarn prettier:cli --write",
     "eslint": "eslint --report-unused-disable-directives .",
     "eslint:fix": "yarn eslint --fix",
     "start": "node ./dist/run.js",
     "preexport-openapi": "yarn build && rm -f openapi.json",
-    "export-openapi": "node ./dist/run.js -write-openapi",
+    "export-openapi": "node ./dist/export-openapi.js",
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
-    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
+    "release": "yarn lint && yarn validate-openapi && yarn test",
     "docker:up": "docker-compose up"
   },
   "engines": {
@@ -38,7 +34,7 @@
   "dependencies": {
     "@stoqey/ib": "^1.2.5",
     "@types/lru-cache": "^5.1.0",
-    "@waytrade/microservice-core": "^0.9.51",
+    "@waytrade/microservice-core": "^0.9.53",
     "lru-cache": "^6.0.0",
     "rxjs": "^7.3.0"
   },
@@ -53,7 +49,6 @@
     "eslint-plugin-rxjs": "^3.3.6",
     "jest": "^27.0.6",
     "jest-junit": "^12.2.0",
-    "prettier": "^2.3.2",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19",
     "ts-jest": "^27.0.5",

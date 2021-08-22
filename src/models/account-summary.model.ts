@@ -5,11 +5,13 @@ import {model, property} from "@waytrade/microservice-core";
  */
 @model("An account summary")
 export class AccountSummary {
-  constructor(
-    /** The name of the account. */
-    @property("The name of the account.")
-    public account: string,
-  ) {}
+  constructor(contract: AccountSummary) {
+    Object.assign(this, contract);
+  }
+
+  /** The name of the account. */
+  @property("The name of the account.")
+  account!: string;
 
   /** Account base currency. */
   @property("The account base currency.")

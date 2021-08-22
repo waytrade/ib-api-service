@@ -897,10 +897,10 @@
     "@typescript-eslint/types" "4.29.2"
     eslint-visitor-keys "^2.0.0"
 
-"@waytrade/microservice-core@^0.9.51":
-  version "0.9.51"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.51/0493c5bcc8ecbf03984a04a413fd6cd1281c43c901795aafdccfa7d9544265c8#b1d66412f437110c580fc6c3de6cad701991449d"
-  integrity sha512-Pb/WEBJ31iTH4U34TSr0cbdXzN+IrNTdsGa0uo11S2q8bBRIxF3eiu8YehoKxYrgr6Qr00c/u7qAISAy8uYLvA==
+"@waytrade/microservice-core@^0.9.53":
+  version "0.9.53"
+  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.53/23b98b4216761a9db8cdf23617be8226a38c83a04afbb7849a7c6c043e451126#6766265b1b648ba8e27892248b08a390fdb37a82"
+  integrity sha512-DCuGK6Di/VkQDD7z3cQg1DLM4nUTgz96KZ8pi16mfEsmxcNA5yHCPWnonm8KBy2v1omRWFg0z0+UzWCNP+7y3g==
   dependencies:
     axios "^0.21.1"
     dotenv "^10.0.0"
@@ -2977,11 +2977,6 @@ prelude-ls@~1.1.2:
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.1.2.tgz#21932a549f5e52ffd9a827f570e04be62a97da54"
   integrity sha1-IZMqVJ9eUv/ZqCf1cOBL5iqX2lQ=
 
-prettier@^2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.3.2.tgz#ef280a05ec253712e486233db5c6f23441e7342d"
-  integrity sha512-lnJzDfJ66zkMy58OL5/NY5zp70S7Nz6KqcKkXYzn2tMVrNxvbqaBpg7H3qHaLxCJ5lNMsGuM8+ohS7cZrthdLQ==
-
 pretty-format@^27.0.0, pretty-format@^27.0.6:
   version "27.0.6"
   resolved "https://registry.yarnpkg.com/pretty-format/-/pretty-format-27.0.6.tgz#ab770c47b2c6f893a21aefc57b75da63ef49a11f"
@@ -3537,7 +3532,7 @@ typescript@~4.3.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
   integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
 
-"uWebSockets.js@github:uNetworking/uWebSockets.js#v19.3.0":
+uWebSockets.js@uNetworking/uWebSockets.js#v19.3.0:
   version "19.3.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/7bf0faac5859fef2d113e83d22803f7833774c11"
 

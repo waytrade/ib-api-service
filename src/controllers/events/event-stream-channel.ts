@@ -1,7 +1,7 @@
 import {MapExt, MicroserviceStream} from "@waytrade/microservice-core";
 import {Observable, Subscription} from "rxjs";
 import {IBApiError} from "../../models/error";
-import {IBApiService} from "../../services/ib-api-service";
+import {IBApiService} from "../../services/ib-api.service";
 import {IBApiEventType, IBApiEventTypeSources} from "../ib-api.controller";
 
 /**

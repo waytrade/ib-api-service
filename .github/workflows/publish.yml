@@ -3,56 +3,19 @@ name: "Test and Publish"
 on:
   push:
     branches:
-      - "master"
-env:
-  IMAGE_NAME: ib-api-service
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   test:
-    name: "Tests and Validation"
+    name: "Build and Test"
     runs-on: ubuntu-latest
+    container: ghcr.io/waytrade/microservice-core/build:latest
+
     steps:
-      - name: "Checkout source code"
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.ref }}
-
-      - name: "Setup Node.js"
-        uses: actions/setup-node@v2
-        with:
-          node-version: "14.x"
-          registry-url: https://registry.npmjs.org/
-
-      - name: "Install OpenAPI Tools"
-        run: npm install --global @openapitools/openapi-generator-cli
-
-      - name: "Install Dependencies"
-        run: yarn install
-
-      - name: "Build Code"
-        run: yarn build
-
-      - name: "Run Tests"
-        run: yarn test
-
-      - name: "Validate API"
-        run: yarn validate-openapi
-
-      - name: "Automated Version Bump"
-        uses: "phips28/gh-action-bump-version@master"
-        with:
-          tag-prefix: ""
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Publish to npmjs"
-        run: |
-          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-
-      - name: "Setup github environment"
+      - name: "Setup node.js environment"
         uses: "actions/setup-node@v2"
         with:
           node-version: "14.x"
@@ -60,7 +23,87 @@ jobs:
           scope: "@waytrade"
           always-auth: true
 
-      - name: "Publish to github"
+      - name: "Configure cache"
+        uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: "Checkout source code"
+        uses: "actions/checkout@v2"
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Prepare .npmrc
+        run: echo //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN >> .npmrc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Install dependencies"
+        run: yarn install
+
+      - name: "Build App"
+        run: yarn build
+
+      - name: "Run Tests"
+        run: yarn test
+
+      - name: "Run validate OpenAPI"
+        run: yarn validate-openapi
+
+      - name: "Bump Version"
+        if: github.ref == 'refs/heads/master'
+        uses: "phips28/gh-action-bump-version@master"
+        with:
+          tag-prefix: "v"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Upload Test-Report Artifact"
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-report
+          path: test-report/
+          retention-days: 5
+
+      - name: "Deploy Test-Report"
+        if: github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./test-report
+          exclude_assets: "coverage/lcov.info,coverage/lcov-report/*"
+
+      - name: "Upload Build Artifact"
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-files
+          retention-days: 1
+          path: |
+            ./openapi.json
+            ./package.json
+            ./dist
+
+  publish-npm:
+    name: "Publish NPM"
+    if: github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Setup node.js environment"
+        uses: "actions/setup-node@v2"
+        with:
+          node-version: "14.x"
+          registry-url: https://npm.pkg.github.com/
+          scope: "@waytrade"
+          always-auth: true
+
+      - name: "Download Build Artifact"
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-files
+
+      - name: "Publish NPM Package"
         run: |
           echo registry=https://npm.pkg.github.com/waytrade >> .npmrc
           npm config set //npm.pkg.github.com//:_authToken=$NODE_AUTH_TOKEN
@@ -69,40 +112,36 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-docker:
-    name: Publish Docker Image
+    name: "Publish Docker Image"
+    if: github.ref == 'refs/heads/master'
     needs: test
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v2
+      - name: "Checkout source code"
+        uses: "actions/checkout@v2"
         with:
           ref: ${{ github.ref }}
-
-      - name: Prepare .npmrc
-        uses: "actions/setup-node@v2"
-        with:
-          node-version: "14.x"
-          registry-url: https://npm.pkg.github.com/
-          scope: "@waytrade"
-          always-auth: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare .npmrc
         run: echo //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN >> .npmrc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image
-        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+      - name: "Download Build Artifact"
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-files
 
       - name: Log into registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: docker build . --file Dockerfile --tag production
 
       - name: Push image
         run: |
-          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_NAME=production
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           # Strip git ref prefix from version

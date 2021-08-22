@@ -7,8 +7,9 @@ services:
       context: .
       dockerfile: ./Dockerfile
     environment:
+      SERVER_PORT: 3000
       TWS_USERID: ${TWS_USERID}
       TWS_PASSWORD: ${TWS_PASSWORD}
       TRADING_MODE: ${TRADING_MODE:-live}
     ports:
-      - 3004:3004
+      - 3000:3000

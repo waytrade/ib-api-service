@@ -17,7 +17,7 @@ import {Observable} from "rxjs";
 import {IBApiApp} from "../app";
 import {ContractDetails} from "../models/contract-details.model";
 import {IBApiEvent} from "../models/ib-api-event";
-import {IBApiService} from "../services/ib-api-service";
+import {IBApiService} from "../services/ib-api.service";
 import {EventStreamChannel} from "./events/event-stream-channel";
 
 /** Event request types. */
@@ -82,7 +82,7 @@ export const IBApiEventTypeSources = new Map<IBApiEventType, IBApiEventSource>([
 /**
  * The IBApi endpoint + controller.
  */
-@controller("IB Api Endpoint")
+@controller("IB Api Endpoint", "/")
 export class IBApiController {
   @inject("IBApiApp")
   private app!: IBApiApp;
@@ -104,7 +104,7 @@ export class IBApiController {
   // REST functions
   //
 
-  @get("/contractDetails")
+  @get("contractDetails")
   @summary("Get contract details.")
   @description("Get contract details of the contract id.")
   @queryParameter("conId", Number, true, "The IB contract id.")
@@ -137,7 +137,7 @@ export class IBApiController {
   // Event stream
   //
 
-  @websocket("/events")
+  @websocket("events")
   @summary("Create an event-stream.")
   @description(
     "Update the connection to a WebSocket to receive a stream of IBApiEvent objects.</br>" +
