@@ -116,7 +116,7 @@ export class IBApiController {
     // verify state and arguments
 
     const conId = Number(request.queryParams.conId);
-    if (conId === undefined || conId == NaN) {
+    if (conId === undefined || isNaN(conId)) {
       throw new HttpError(HttpStatus.BAD_REQUEST);
     }
 

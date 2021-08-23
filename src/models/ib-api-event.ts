@@ -14,24 +14,24 @@ export class IBApiEvent {
 
   @arrayProperty(
     AccountSummary,
-    "An update on the account summaries. " +
-      "Send 'sub:accountSummaries' on event stream to subscribe. " +
+    "An update on the account summaries.</br>" +
+      "Send 'sub:accountSummaries' on event stream to subscribe.</br>" +
       "Send 'unsub:accountSummaries' on event stream to unsubscribe.",
   )
   accountSummaries?: AccountSummary[];
 
   /** Update on inventorty positions. */
   @property(
-    "An update on the inventory positions. " +
-      "Send 'sub:positions' on event stream to subscribe. " +
+    "An update on the inventory positions.</br>" +
+      "Send 'sub:positions' on event stream to subscribe." +
       "Send 'unsub:positions' on event stream to unsubscribe.",
   )
   positions?: PositionsUpdate;
 
   /** Update on inventorty positions. */
   @property(
-    "A market data update." +
-      "Send 'sub:marketData:<conId>' on event stream to subscribe. " +
+    "A market data update.</br>" +
+      "Send 'sub:marketData:<conId>' on event stream to subscribe.</br>" +
       "Send 'unsub:positions:<conId>' on event stream to unsubscribe.",
   )
   marketData?: MarketData;
