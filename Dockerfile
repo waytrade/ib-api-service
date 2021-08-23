@@ -29,7 +29,7 @@ COPY ./docker/config/ibgateway/jts.ini /root/Jts/jts.ini
 
 # Install IBC
 RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/3.8.5/IBCLinux-3.8.7.zip --output IBCLinux-3.8.7.zip
-RUN mkdir /root/ibc && unzip ./3rdParty/IBCLinux-3.8.7.zip -d /root/ibc
+RUN mkdir /root/ibc && unzip ./IBCLinux-3.8.7.zip -d /root/ibc
 RUN chmod -R u+x /root/ibc/*.sh && chmod -R u+x /root/ibc/scripts/*.sh
 COPY ./docker/config/ibc/config.ini /root/ibc/config.ini
 
