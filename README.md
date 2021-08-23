@@ -3,6 +3,12 @@
 [![Test and Publish](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/waytrade/microservice-core.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/waytrade/microservice-core/context:javascript)
 
+ ![GitHub package.json version](https://img.shields.io/github/package-json/v/waytrade/ib-api-service)
+ 
+[![Test and Publish](https://github.com/waytrade/microservice-core/actions/workflows/test_publish.yml/badge.svg)](https://github.com/waytrade/ib-api-service/actions/workflows/test_publish.yml) 
+[![Core Coverage](https://raw.githubusercontent.com/waytrade/ib-api-service/gh-pages/coverage/coverage.svg)](https://waytrade.github.io/ib-api-service/coverage/lcov-report)
+[![Test Report](./assets/test-results.svg)](https://waytrade.github.io/ib-api-service/jest/) 
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/waytrade/ib-api-service.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/waytrade/ib-api-service/context:javascript)
 
 Implements a REST / Webhook API Server on top of https://github.com/stoqey/ib
 
