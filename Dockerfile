@@ -3,7 +3,7 @@
 #
 
 #
-# Stage 1: build and 3rd party app installation
+# Stage 1: build App and install 3rd party tools
 #
 # This is a dedicated stage so that build deps and 3rdParty installation
 # archives don't end up on production image and consume unnecessary space.
@@ -28,8 +28,10 @@ RUN ./ibgateway-latest-standalone-linux-x64.sh -q -dir /root/Jts/ibgateway/lates
 COPY ./docker/config/ibgateway/jts.ini /root/Jts/jts.ini
 
 # Install IBC
-RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/3.8.5/IBCLinux-3.8.7.zip --output IBCLinux-3.8.7.zip
-RUN mkdir /root/ibc && unzip ./IBCLinux-3.8.7.zip -d /root/ibc
+RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/3.8.7/IBCLinux-3.8.7.zip --output IBCLinux-3.8.7.zip
+RUN mkdir /root/ibc
+RUN unzip ./IBCLinux-3.8.7.zip -d /root/ibc
+
 RUN chmod -R u+x /root/ibc/*.sh && chmod -R u+x /root/ibc/scripts/*.sh
 COPY ./docker/config/ibc/config.ini /root/ibc/config.ini
 
@@ -59,10 +61,10 @@ COPY --from=setup /root/Jts/ ./Jts
 COPY --from=setup /opt/i4j_jres/ /opt/i4j_jres
 
 # Copy App files
-COPY --from=setup /root/app/package*.json ./
-COPY --from=setup /root/app/config ./config
-COPY --from=setup /root/app/dist/ ./dist
-COPY --from=setup /root/app/node_modules/ ./node_modules
+COPY --from=setup /root/app/package.json ./app/package.json
+COPY --from=setup /root/app/config/ ./app/config
+COPY --from=setup /root/app/dist/ ./app/dist
+COPY --from=setup /root/app/node_modules/ ./app/node_modules
 
 # Copy run script
 COPY ./docker/run.sh /root/run.sh
@@ -81,3 +83,4 @@ ENV DISPLAY :1
 # Start run script
 ENV NODE_ENV production
 CMD ["/root/run.sh"]
+#CMD ["bash"]

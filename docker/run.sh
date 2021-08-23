@@ -11,5 +11,5 @@ Xvfb :1 -ac -screen 0 1024x768x16 &
 
 sleep 30
 
-cd /usr/src/app
+cd /root/app
 yarn start
