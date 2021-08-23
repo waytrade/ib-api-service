@@ -1,48 +1,36 @@
 import {MicroserviceApp} from "@waytrade/microservice-core";
 import path from "path";
 import {IBApiServiceConfig} from "./config";
-import {IBApiController} from "./controllers";
-import {IBApiService} from "./services/ib-api-service";
-
-/** List of controllers on the endpoint */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CONTROLLERS = [IBApiService];
-
-/** List of services on the app */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const SERVICES = [IBApiController];
+import {IBApiController} from "./controllers/ib-api.controller";
+import {IBApiService} from "./services/ib-api.service";
 
 /**
  * The Interactive Brokers TWS API service App.
  */
-export class IBApiApp extends MicroserviceApp {
+export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
   constructor() {
-    super(path.resolve(__dirname, ".."));
+    super(path.resolve(__dirname, ".."), {
+      apiControllers: [IBApiController],
+      services: [IBApiService],
+    });
   }
 
-  /** Get the service config */
-  static get config(): IBApiServiceConfig {
-    return <IBApiServiceConfig>IBApiApp.context.config;
-  }
-
-  /** Called when the context has booted, before the API service is started. */
-  async onBoot(): Promise<void> {
-    // increase port for paper trading mode in docker
-    if (!IBApiApp.config.IB_GATEWAY_PORT) {
-      if (IBApiApp.config.TRADING_MODE === "live") {
-        IBApiApp.config.IB_GATEWAY_PORT = 4001;
-      } else if (IBApiApp.config.TRADING_MODE === "paper") {
-        IBApiApp.config.IB_GATEWAY_PORT = 4002;
-      }
+  /** Called when the app shall boot up. */
+  protected async boot(): Promise<void> {
+    // overwrite port if TRADING_MODE is specified
+    if (this.config.TRADING_MODE === "live") {
+      this.config.IB_GATEWAY_PORT = 4001;
+    } else if (this.config.TRADING_MODE === "paper") {
+      this.config.IB_GATEWAY_PORT = 4002;
     }
-    IBApiApp.info(`IB Gateway host: ${IBApiApp.config.IB_GATEWAY_HOST}`);
-    IBApiApp.info(`IB Gateway port: ${IBApiApp.config.IB_GATEWAY_PORT}`);
+
+    this.info(`Booting ib-api-service at port ${this.config.SERVER_PORT}`);
+    this.info(`IB Gateway host: ${this.config.IB_GATEWAY_HOST}`);
+    this.info(`IB Gateway port: ${this.config.IB_GATEWAY_PORT}`);
   }
 
   /** Called when the microservice has been started. */
   onStarted(): void {
-    IBApiApp.info(
-      `Server is running at port ${IBApiApp.context.config.SERVER_PORT}`,
-    );
+    this.info(`ib-api-service is running at port ${this.config.SERVER_PORT}`);
   }
 }

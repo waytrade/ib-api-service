@@ -1,309 +1,198 @@
 import {
-  callback,
   controller,
   description,
   get,
   HttpError,
+  HttpStatus,
+  inject,
   MicroserviceRequest,
-  pathParameter,
-  post,
+  MicroserviceStream,
   queryParameter,
-  requestBody,
   response,
   responseBody,
   summary,
-  WebhookCallbackSubscriptions,
+  websocket,
 } from "@waytrade/microservice-core";
-import HttpStatus from "http-status";
-import {firstValueFrom} from "rxjs";
-import {IBApiApp as App} from "..";
-import {
-  AccountSummariesUpdate,
-  AccountSummaryCallbackSubscription,
-} from "../models/account-summary.model";
-import {OHLCBars} from "../models/bar";
+import {Observable} from "rxjs";
+import {IBApiApp} from "../app";
 import {ContractDetails} from "../models/contract-details.model";
-import {
-  MarketDataCallbackSubscription,
-  MarketDataUpdate,
-} from "../models/market-data.model";
-import {
-  Position,
-  PositionsCallbackSubscription,
-  PositionsUpdate,
-} from "../models/position.model";
-import {IBApiService} from "../services/ib-api-service";
+import {IBApiEvent} from "../models/ib-api-event";
+import {IBApiService} from "../services/ib-api.service";
+import {EventStreamChannel} from "./events/event-stream-channel";
+
+/** Event request types. */
+enum IBApiEventRequestType {
+  /** Subscribe for an event. */
+  Subscribe = "sub",
+  /** Unsubscribe from an event. */
+  Unsubscribe = "unsub",
+}
+
+/** An event source from IBApi. */
+type IBApiEventSource = (
+  ibApiService: IBApiService,
+  args: string[],
+) => Observable<unknown>;
+
+/**
+ * Event types.
+ *
+ * Adapt IBApiEventTypeSources and description of
+ * IBApiController.createEventStream if you changed it!!
+ */
+export enum IBApiEventType {
+  /** Accounts summaries update. */
+  AccountSummaries = "accountSummaries",
+
+  /** Account positions update. */
+  Positions = "positions",
+
+  /** Market data update. */
+  MarketData = "marketData",
+}
+
+/** All IBApi event sources, with event type as key. */
+export const IBApiEventTypeSources = new Map<IBApiEventType, IBApiEventSource>([
+  [
+    IBApiEventType.AccountSummaries,
+    (ibApiService): Observable<unknown> => {
+      return ibApiService.accountSummaries;
+    },
+  ],
+  [
+    IBApiEventType.Positions,
+    (ibApiService): Observable<unknown> => {
+      return ibApiService.positions;
+    },
+  ],
+  [
+    IBApiEventType.MarketData,
+    (ibApiService, args: string[]): Observable<unknown> => {
+      if (args[0]) {
+        return ibApiService.getMarketData(Number(args[0]));
+      } else {
+        return new Observable(res =>
+          res.error(new Error("Invalid request: no conId argument")),
+        );
+      }
+    },
+  ],
+]);
 
 /**
  * The IBApi endpoint + controller.
  */
-@controller("IB Api Endpoint")
+@controller("IB Api Endpoint", "/")
 export class IBApiController {
-  /** Webhook failure callback. */
-  private static logFailedWebhook(url: string, error: Error): void {
-    App.warn("Failed to POST " + url + ": " + error.message);
-  }
+  @inject("IBApiApp")
+  private app!: IBApiApp;
 
-  /** List of currently active account summary webhooks. */
-  private static accountSummaryHooks = new WebhookCallbackSubscriptions<AccountSummariesUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  @inject("IBApiService")
+  private apiService!: IBApiService;
 
-  /** List of currently active position list webhooks. */
-  private static positionsHooks = new WebhookCallbackSubscriptions<PositionsUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
+  /** List of currently open event-stream channels. */
+  private readonly eventStreamChannels = new Set<EventStreamChannel>();
 
-  /** List of currently active contract market data feed webhooks. */
-  private static contractMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
-
-  /** List of currently active fx market data feed webhooks. */
-  private static fxMarketDataHooks = new WebhookCallbackSubscriptions<MarketDataUpdate>(
-    (url, error): void => IBApiController.logFailedWebhook(url, error),
-  );
-
-  //
-  // Service functions
-  //
-
-  /** Shutdown the controller. */
-  static shutdown(): void {
-    this.positionsHooks.clear();
-    this.contractMarketDataHooks.clear();
-    this.fxMarketDataHooks.clear();
+  /** Stop the controller */
+  stop(): void {
+    this.eventStreamChannels.forEach(ch => {
+      ch.close();
+    });
   }
 
   //
-  // Endpoint functions
+  // REST functions
   //
 
-  @post("/accountSummaries")
-  @summary("Get the account summaries.")
-  @description("Get a snapshot of the current account summaries.")
-  @responseBody(AccountSummariesUpdate)
-  static async getAccountSummaries(): Promise<AccountSummariesUpdate> {
-    return firstValueFrom(IBApiService.getAccountSummaries());
-  }
-
-  @post("/subscribeAccountSummaries")
-  @summary("Subscribe to account summary updates.")
-  @description("Subscribe to receive account summary updates via Webhook.")
-  @response(201, "New subscription created.")
-  @response(204, "The subscription already exists, no acton.")
-  @response(400)
-  @requestBody(AccountSummaryCallbackSubscription)
-  @callback("{$request.body#/callbackUrl}", AccountSummariesUpdate)
-  static subscribeAccountSummaries(
-    request: MicroserviceRequest,
-    params: AccountSummaryCallbackSubscription,
-  ): void {
-    // verify arguments
-
-    if (!params.callbackUrl || !params.port) {
-      throw new HttpError(400);
-    }
-
-    // add callback subscription
-
-    const newHookAdded = this.accountSummaryHooks.add(
-      params.host ?? request.remoteAddress,
-      params.port,
-      params.callbackUrl,
-      IBApiService.getAccountSummaries(),
-    );
-
-    throw new HttpError(newHookAdded ? 201 : 204);
-  }
-
-  @get("/positions")
-  @summary("Get all positions.")
-  @description("Get a snapshot of currently open positions.")
-  @responseBody(PositionsUpdate)
-  static async getPositions(): Promise<PositionsUpdate> {
-    return await firstValueFrom(IBApiService.getPositions());
-  }
-
-  @post("/positions")
-  @summary("Subscribe to position updates.")
-  @description("Subscribe to receive position updates via Webhook.")
-  @response(201, "New subscription created.")
-  @response(204, "The subscription already exists, no acton.")
-  @response(400)
-  @requestBody(PositionsCallbackSubscription)
-  @callback("{$request.body#/callbackUrl}", PositionsUpdate)
-  static subscribePositions(
-    request: MicroserviceRequest,
-    params: PositionsCallbackSubscription,
-  ): void {
-    // verify arguments
-
-    if (!params.callbackUrl || !params.port) {
-      throw new HttpError(400);
-    }
-
-    // add webhook
-
-    const newHookAdded = this.positionsHooks.add(
-      params.host ?? request.remoteAddress,
-      params.port,
-      params.callbackUrl,
-      IBApiService.getPositions(),
-    );
-
-    throw new HttpError(newHookAdded ? 201 : 204);
-  }
-
-  @get("/position/{id}")
-  @summary("Get a position.")
-  @description("Get a snapshot of the positions with given position id.")
-  @pathParameter("id", String, "The position id")
-  @responseBody(Position)
-  static async getPosition(request: MicroserviceRequest): Promise<Position> {
-    const paths = request.url?.split("/");
-    if (paths.length < 4) {
-      throw new HttpError(HttpStatus.BAD_REQUEST);
-    }
-    const id = unescape(paths[3]);
-    const positions = await firstValueFrom(IBApiService.getPositions());
-    const position = positions.all?.find(pos => pos.id === id);
-    if (!position) {
-      throw new HttpError(HttpStatus.NOT_FOUND);
-    }
-    return position;
-  }
-
-  @get("/contractDetails")
+  @get("contractDetails")
   @summary("Get contract details.")
   @description("Get contract details of the contract id.")
-  @queryParameter("conid", Number, true, "The IB contract id.")
+  @queryParameter("conId", Number, true, "The IB contract id.")
   @response(HttpStatus.BAD_REQUEST)
   @responseBody(ContractDetails)
-  static async getContractDetails(
+  async getContractDetails(
     request: MicroserviceRequest,
   ): Promise<ContractDetails> {
     // verify state and arguments
 
-    const conid = Number(request.queryParams.conid);
-    if (conid === undefined || conid == NaN) {
+    const conId = Number(request.queryParams.conId);
+    if (conId === undefined || isNaN(conId)) {
       throw new HttpError(HttpStatus.BAD_REQUEST);
     }
 
     // request contract details
     return new Promise<ContractDetails>((resolve, reject) => {
-      IBApiService.getContractDetails(Number(conid))
+      this.apiService
+        .getContractDetails(Number(conId))
         .then(result => resolve(result))
         .catch(err => {
           const msg = `getContractDetails(): ${err.code} - ${err.error.message}`;
-          App.error(msg);
+          this.app.error(msg);
           reject(new HttpError(HttpStatus.BAD_REQUEST, msg));
         });
     });
   }
 
-  @post("/marketData")
-  @summary("Subscribe to realtime market data.")
-  @description("Subscribe to a realtime market data feed via Webhook.")
-  @response(201, "New subscription created.")
-  @response(204, "The subscription already exists, no acton.")
-  @response(400)
-  @requestBody(MarketDataCallbackSubscription)
-  @callback("{$request.body#/callbackUrl}", MarketDataUpdate)
-  static subscribeMarketData(
-    request: MicroserviceRequest,
-    params: MarketDataCallbackSubscription,
-  ): void {
-    // verify arguments
+  //
+  // Event stream
+  //
 
-    if (
-      !params.callbackUrl ||
-      !params.port ||
-      (!params.conId && !params.fxPair)
-    ) {
-      throw new HttpError(400);
-    }
-
-    // add webhook
-
-    let newHookAdded = false;
-
-    if (params.conId) {
-      newHookAdded = this.contractMarketDataHooks.add(
-        params.host ?? request.remoteAddress,
-        params.port,
-        params.callbackUrl,
-        IBApiService.getMarketData(params.conId),
-        "" + params.conId,
-      );
-    } else if (params.fxPair) {
-      const c0 = params.fxPair.substr(0, 3);
-      const c1 = params.fxPair.substr(3);
-      newHookAdded = this.fxMarketDataHooks.add(
-        params.host ?? request.remoteAddress,
-        params.port,
-        params.callbackUrl,
-        IBApiService.getFxMarketData(c0, c1),
-        params.fxPair,
-      );
-    }
-
-    throw new HttpError(newHookAdded ? 201 : 204);
-  }
-
-  @get("/historicalData")
-  @summary("Get a contracts historical data.")
-  @description("Get a contracts historical data.")
-  @queryParameter("conid", Number, true, "The IB contract id.")
-  @queryParameter(
-    "duration",
-    String,
-    true,
-    "The amount of time for which the data needs to be retrieved",
+  @websocket("events")
+  @summary("Create an event-stream.")
+  @description(
+    "Update the connection to a WebSocket to receive a stream of IBApiEvent objects.</br>" +
+      `To subscribe for a specific event type, send '${IBApiEventRequestType.Subscribe}:&lt;eventType&gt;'.</br>` +
+      `To unsubscribe from a specific event type, send '${IBApiEventRequestType.Unsubscribe}:&lt;eventType&gt;'.</br>` +
+      "Avaiable event types:</br><ul>" +
+      `<li>${IBApiEventType.AccountSummaries}</li>` +
+      `<li>${IBApiEventType.Positions}</li>` +
+      `<li>${IBApiEventType.MarketData}</li>`,
   )
-  @queryParameter("barSize", String, true, "The size of the bar")
-  @queryParameter("endTime", String, false, "End time (now if undefined)")
-  @responseBody(OHLCBars)
-  static async getHistoricalData(
-    request: MicroserviceRequest,
-  ): Promise<OHLCBars> {
-    const conid = Number(request.queryParams.conid);
-    if (conid === undefined || conid == NaN) {
-      throw new HttpError(400);
-    }
-    const duration = request.queryParams.duration as string;
-    if (duration === undefined) {
-      throw new HttpError(400);
-    }
-    const barSize = request.queryParams.barSize as string;
-    if (barSize === undefined) {
-      throw new HttpError(400);
-    }
+  @responseBody(IBApiEvent)
+  createEventStream(stream: MicroserviceStream): void {
+    // add to event channel list
 
-    let endTime = request.queryParams.endTime as string;
-    if (!endTime) {
-      const now = new Date();
-      endTime = `${now.getFullYear()}${("0" + (now.getMonth() + 1)).slice(
-        -2,
-      )}${("0" + now.getDate()).slice(-2)} ${("0" + now.getHours()).slice(
-        -2,
-      )}:${("0" + now.getMinutes()).slice(-2)}:${("0" + now.getSeconds()).slice(
-        -2,
-      )}`;
-    }
+    let channel: EventStreamChannel | undefined = new EventStreamChannel(
+      stream,
+      this.apiService,
+    );
 
-    return new Promise<OHLCBars>((resolve, reject) => {
-      IBApiService.getHistoricalData(
-        conid,
-        endTime,
-        duration,
-        barSize,
-        "TRADES",
-      )
-        .then(data => resolve(data))
-        .catch(ibError => {
-          reject(new HttpError(500, ibError.error.message));
-        });
+    this.eventStreamChannels.add(channel);
+
+    stream.closed.then(() => {
+      if (channel) {
+        channel.close();
+        this.eventStreamChannels.delete(channel);
+      }
+      channel = undefined;
     });
+
+    // register message handler
+
+    stream.onReceived = (message): void => {
+      try {
+        const tokens = message.split(":");
+        if (tokens.length < 2) {
+          return;
+        }
+
+        const cmd = tokens[0];
+        const eventType = tokens[1];
+        const eventArgs = tokens.length > 2 ? tokens.slice(2) : [];
+
+        switch (cmd) {
+          case IBApiEventRequestType.Subscribe:
+            channel?.subscribeEvents(eventType as IBApiEventType, eventArgs);
+            break;
+          case IBApiEventRequestType.Unsubscribe:
+            channel?.unsubscribeEvents(eventType as IBApiEventType, eventArgs);
+            break;
+        }
+      } catch (e) {
+        this.app.error(
+          `Error during processing event-stream requests: ${JSON.stringify(e)}`,
+        );
+      }
+    };
   }
 }

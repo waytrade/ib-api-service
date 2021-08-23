@@ -1,20 +1,21 @@
 import {arrayProperty, model, property} from "@waytrade/microservice-core";
-import {ContractDetails} from "./contract-details.model";
-import {Contract} from "./contract.model";
 
 /**
  * A position on an IBKR account.
  */
 @model("An positions on an IBKR account")
 export class Position {
-  @property("The positions id.")
-  id?: string;
+  constructor(contract: Position) {
+    Object.assign(this, contract);
+  }
 
-  @property("The position's contract.")
-  contract?: Contract;
+  /** The positions id. */
+  @property("The position id.")
+  id!: string;
 
-  @property("The position's contract details.")
-  details?: ContractDetails;
+  /** The position's contract id. */
+  @property("The position's contract id.")
+  conId?: string;
 
   /** The number of positions held. */
   @property("The number of positions held.")
@@ -46,18 +47,14 @@ export class Position {
  */
 @model("An update the positions.")
 export class PositionsUpdate {
-  /** List all positions. */
-  @arrayProperty(Position, "List all positions. Only send on full-syncs.")
-  all?: Position[];
-
-  /** List of added or changed positions since last update. */
+  /** List of positions IDs added or changed since last update. */
   @arrayProperty(
     Position,
     "List of added or changed positions since last update.",
   )
   changed?: Position[];
 
-  /** List of closed positions since last update. */
+  /** List of positions ids closed since last update. */
   @arrayProperty(String, "List of closed positions since last update.")
   closed?: string[];
 }

@@ -1,13 +1,17 @@
-import {arrayProperty, model, property} from "@waytrade/microservice-core";
+import {model, property} from "@waytrade/microservice-core";
 
 /**
  * An account summary.
  */
 @model("An account summary")
 export class AccountSummary {
+  constructor(contract: AccountSummary) {
+    Object.assign(this, contract);
+  }
+
   /** The name of the account. */
   @property("The name of the account.")
-  account?: string;
+  account!: string;
 
   /** Account base currency. */
   @property("The account base currency.")
@@ -72,55 +76,15 @@ export class AccountSummary {
   @property("Excess liquidity of whole portfolio.")
   fullExcessLiquidity?: number;
 
-  /** The daily PnL. */
-  @property("The daily PnL.")
-  dailyPnL?: number;
-
   /** The daily unrealized PnL. */
   @property("The daily unrealized PnL.")
-  unrealizedPnL?: number;
+  dailyPnL?: number;
 
   /** The daily realized PnL. */
   @property("The daily realized PnL.")
   realizedPnL?: number;
-}
 
-/**
- * A update on account summaries.
- */
-@model("An update on the account summaries.")
-export class AccountSummariesUpdate {
-  /** List of all account summary. Only valid on full-sync. */
-  @arrayProperty(
-    AccountSummary,
-    "List of all account summary. Only valid on full-sync.",
-  )
-  all?: AccountSummary[];
-
-  /** List of changed account summaries since last update. */
-  @arrayProperty(
-    AccountSummary,
-    "List of changed account summaries since last update.",
-  )
-  changed?: AccountSummary[];
-}
-
-/**
- * A Webhook callback subscription on account summaries
- */
-@model("A Webhook callback subscription on account summaries.")
-export class AccountSummaryCallbackSubscription {
-  /**The hostname of the callback server. */
-  @property(
-    "The hostname of the callback server. The connection peer address will be used if not specified.",
-  )
-  host?: string;
-
-  /**The port number of the callback server. */
-  @property("The port number of the callback server.")
-  port?: number;
-
-  /** The callback url. */
-  @property("The callback url.")
-  callbackUrl?: string;
+  /** The daily unrealized PnL. */
+  @property("The total unrealized PnL.")
+  unrealizedPnL?: number;
 }

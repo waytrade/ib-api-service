@@ -1,6 +1,6 @@
 {
   "name": "@waytrade/ib-api-service",
-  "version": "0.1.51",
+  "version": "0.9.0",
   "description": "Interactive Brokers API Service",
   "author": "Matthias Frener <matthias.frener@gmail.com>",
   "license": "MIT",
@@ -9,54 +9,49 @@
     "url": "https://github.com/waytrade/ib-api-service.git"
   },
   "files": [
-    "dist/",
     "openapi.json"
   ],
   "scripts": {
     "clean": "rm -rf dist *.tsbuildinfo .eslintcache",
     "build": "yarn clean && yarn tsc",
     "build:watch": "tsc --watch",
-    "lint": "yarn eslint && yarn prettier:check",
-    "lint:fix": "yarn eslint:fix && yarn prettier:fix",
+    "lint": "yarn eslint",
+    "lint:fix": "yarn eslint:fix",
     "test": "jest --reporters=default --useStderr --detectOpenHandles --verbose",
-    "prettier:cli": "prettier \"**/*.ts\"",
-    "prettier:check": "yarn prettier:cli -l",
-    "prettier:fix": "yarn prettier:cli --write",
     "eslint": "eslint --report-unused-disable-directives .",
     "eslint:fix": "yarn eslint --fix",
     "start": "node ./dist/run.js",
     "preexport-openapi": "yarn build && rm -f openapi.json",
-    "export-openapi": "node ./dist/run.js -write-openapi",
+    "export-openapi": "node ./dist/export-openapi.js",
     "prevalidate-openapi": "yarn export-openapi",
     "validate-openapi": "openapi-generator-cli validate -i ./openapi.json",
-    "release": "yarn prettier:fix && yarn lint && yarn validate-openapi && yarn test",
+    "release": "yarn lint && yarn validate-openapi && yarn test",
     "docker:up": "docker-compose up"
   },
   "engines": {
     "node": ">=14.15.4"
   },
   "dependencies": {
-    "@stoqey/ib": "^1.1.57",
+    "@stoqey/ib": "^1.2.5",
     "@types/lru-cache": "^5.1.0",
-    "@waytrade/microservice-core": "^0.1.32",
+    "@waytrade/microservice-core": "^0.9.53",
     "lru-cache": "^6.0.0",
-    "rxjs": "^7.1.0"
+    "rxjs": "^7.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.23",
+    "@types/jest": "^27.0.1",
     "@types/node": "^14.15.4",
-    "@types/pino": "^6.3.8",
-    "@types/swagger-ui-dist": "^3.30.0",
-    "@typescript-eslint/eslint-plugin": "^4.27.0",
-    "@typescript-eslint/parser": "^4.27.0",
-    "eslint": "^7.29.0",
-    "eslint-plugin-rxjs": "^3.3.3",
-    "jest": "^27.0.4",
+    "@types/pino": "^6.3.11",
+    "@types/swagger-ui-dist": "^3.30.1",
+    "@typescript-eslint/eslint-plugin": "^4.29.2",
+    "@typescript-eslint/parser": "^4.29.2",
+    "eslint": "^7.32.0",
+    "eslint-plugin-rxjs": "^3.3.6",
+    "jest": "^27.0.6",
     "jest-junit": "^12.2.0",
-    "prettier": "^2.3.1",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19",
-    "ts-jest": "^27.0.3",
-    "typescript": "~4.3.4"
+    "ts-jest": "^27.0.5",
+    "typescript": "~4.3.5"
   }
 }

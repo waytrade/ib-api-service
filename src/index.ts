@@ -1,1 +1,0 @@
-export {IBApiApp} from "./app";
