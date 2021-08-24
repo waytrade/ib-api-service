@@ -55,7 +55,7 @@ Install the '@waytrade/ib-api-service' package:
 
     $ yarn add @waytrade/ib-api-service
 
-_Note that all @waytrade packages are hosted not on **github not on npmjs**._
+_Note that all @waytrade packages are hosted on **github not on npmjs**._
 You will need a .npmrc file on your root folder, containing the following lines at least:
 
 ```
