@@ -66,6 +66,7 @@ export class IBApiController {
   @description("Get contract details of the contract id.")
   @queryParameter("conId", Number, true, "The IB contract id.")
   @response(HttpStatus.BAD_REQUEST)
+  @response(HttpStatus.NOT_FOUND)
   @responseBody(ContractDetails)
   async getContractDetails(
     request: MicroserviceRequest,
@@ -85,7 +86,7 @@ export class IBApiController {
         .catch(err => {
           const msg = `getContractDetails(): ${err.code} - ${err.error.message}`;
           this.app.error(msg);
-          reject(new HttpError(HttpStatus.BAD_REQUEST, msg));
+          reject(new HttpError(HttpStatus.NOT_FOUND, msg));
         });
     });
   }
@@ -131,7 +132,7 @@ export class IBApiController {
       "Avaiable event types:</br><ul>" +
       `<li>${IBApiEventType.AccountSummaries}</li>` +
       `<li>${IBApiEventType.Positions}</li>` +
-      `<li>${IBApiEventType.MarketData}</li>`,
+      `<li>${IBApiEventType.MarketData}:<conId></li>`,
   )
   @responseBody(IBApiEvent)
   createEventStream(stream: MicroserviceStream): void {

@@ -2,7 +2,6 @@ version: "3.4"
 
 services:
   ib-api-service:
-    container_name: ib-api-service
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -12,4 +11,5 @@ services:
       TWS_PASSWORD: ${TWS_PASSWORD}
       TRADING_MODE: ${TRADING_MODE:-live}
     ports:
-      - 3000:3000
+      - "5900:5900"
+      - "3002:3000"

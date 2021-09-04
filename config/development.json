@@ -1,4 +1,4 @@
 {
-  "SERVER_PORT": 3002,
+  "SERVER_PORT": 3003,
   "LOG_LEVEL": "debug"
 }

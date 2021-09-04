@@ -28,9 +28,9 @@ RUN ./ibgateway-latest-standalone-linux-x64.sh -q -dir /root/Jts/ibgateway/lates
 COPY ./docker/config/ibgateway/jts.ini /root/Jts/jts.ini
 
 # Install IBC
-RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/3.8.7/IBCLinux-3.8.7.zip --output IBCLinux-3.8.7.zip
+RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/3.9.0/IBCLinux-3.9.0.zip --output IBCLinux-3.9.0.zip
 RUN mkdir /root/ibc
-RUN unzip ./IBCLinux-3.8.7.zip -d /root/ibc
+RUN unzip ./IBCLinux-3.9.0.zip -d /root/ibc
 
 RUN chmod -R u+x /root/ibc/*.sh && chmod -R u+x /root/ibc/scripts/*.sh
 COPY ./docker/config/ibc/config.ini /root/ibc/config.ini
@@ -51,7 +51,8 @@ RUN apt-get install --no-install-recommends --yes \
   libxrender1 \
   libxtst6 \
   libxi6 \
-  libgtk2.0-bin
+  libgtk2.0-bin \
+  x11vnc
 
 # Copy IBC files
 COPY --from=setup /root/ibc/ ./ibc
@@ -67,7 +68,7 @@ COPY --from=setup /root/app/dist/ ./app/dist
 COPY --from=setup /root/app/node_modules/ ./app/node_modules
 
 # Copy run script
-COPY ./docker/run.sh /root/run.sh
+COPY --from=setup /root/app/docker/run.sh /root/run.sh
 RUN chmod a+x /root/run.sh
 
 # IBC env vars
@@ -84,3 +85,8 @@ ENV DISPLAY :1
 ENV NODE_ENV production
 CMD ["/root/run.sh"]
 #CMD ["bash"]
+
+# ib-api-service
+EXPOSE 3000
+# vnc
+EXPOSE 5900
