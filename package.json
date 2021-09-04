@@ -34,7 +34,7 @@
   "dependencies": {
     "@stoqey/ib": "^1.2.5",
     "@types/lru-cache": "^5.1.0",
-    "@waytrade/microservice-core": "^0.9.62",
+    "@waytrade/microservice-core": "^0.9.67",
     "lru-cache": "^6.0.0",
     "rxjs": "^7.3.0"
   },

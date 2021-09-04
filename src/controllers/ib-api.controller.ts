@@ -16,11 +16,14 @@ import {
 import {
   EventStreamCommand,
   EventToStreamDispatcher,
-} from "@waytrade/microservice-core/dist/util/event-to-stream-disaptcher";
+} from "@waytrade/microservice-core/dist/util/event-to-stream-dispatcher";
 import {Observable} from "rxjs";
 import {IBApiApp} from "../app";
+import {AccountSummary} from "../models/account-summary.model";
 import {ContractDetails} from "../models/contract-details.model";
 import {IBApiEvent} from "../models/ib-api-event";
+import {MarketDataUpdate} from "../models/market-data.model";
+import {PositionsUpdate} from "../models/position.model";
 import {IBApiService} from "../services/ib-api.service";
 
 /** An event source from IBApiService. */
@@ -99,19 +102,19 @@ export class IBApiController {
   private readonly EVENT_SOURCES = new Map<IBApiEventType, IBApiEventSource>([
     [
       IBApiEventType.AccountSummaries,
-      (service: IBApiService): Observable<unknown> => {
+      (service: IBApiService): Observable<AccountSummary[]> => {
         return service.accountSummaries;
       },
     ],
     [
       IBApiEventType.Positions,
-      (service: IBApiService): Observable<unknown> => {
+      (service: IBApiService): Observable<PositionsUpdate> => {
         return service.positions;
       },
     ],
     [
       IBApiEventType.MarketData,
-      (service: IBApiService, args: string[]): Observable<unknown> => {
+      (service: IBApiService, args: string[]): Observable<MarketDataUpdate> => {
         if (args[0]) {
           return service.getMarketData(Number(args[0]));
         } else {

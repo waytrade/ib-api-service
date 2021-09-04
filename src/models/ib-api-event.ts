@@ -1,7 +1,7 @@
 import {arrayProperty, model, property} from "@waytrade/microservice-core";
 import {AccountSummary} from "./account-summary.model";
 import {IBApiError} from "./error";
-import {MarketData} from "./market-data.model";
+import {MarketDataUpdate} from "./market-data.model";
 import {PositionsUpdate} from "./position.model";
 
 /**
@@ -34,5 +34,5 @@ export class IBApiEvent {
       "Send 'sub:marketData:<conId>' on event stream to subscribe.</br>" +
       "Send 'unsub:positions:<conId>' on event stream to unsubscribe.",
   )
-  marketData?: MarketData;
+  marketData?: MarketDataUpdate;
 }
