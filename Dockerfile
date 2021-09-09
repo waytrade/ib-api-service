@@ -33,11 +33,12 @@ FROM ghcr.io/waytrade/microservice-core/production:latest
 WORKDIR /usr/src/app
 
 # Copy files
-COPY --from=build /usr/src/app/scripts/run_delayed.sh .
 COPY --from=build /usr/src/app/package.json .
 COPY --from=build /usr/src/app/config/ ./config
 COPY --from=build /usr/src/app/dist/ ./dist
 COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/scripts/run_delayed.sh .
+RUN chmod a+x ./run_delayed.sh
 
 # Run app
 ENV NODE_ENV=production
