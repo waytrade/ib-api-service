@@ -4,7 +4,7 @@
 [![Test and Publish](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/waytrade/ib-api-service.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/waytrade/ib-api-service/context:javascript)
 
-This App implements a REST API (with OpenAPI spec and SwaggerUI) + a Websocket Server on top of https://github.com/stoqey/ib and brings a docker image, to run the App and the IB Gateway all in one container.
+This App implements a REST API (with OpenAPI spec and SwaggerUI) + a Websocket Server on top of https://github.com/stoqey/ib.
 
 ---
 
