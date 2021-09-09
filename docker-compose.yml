@@ -1,15 +1,26 @@
 version: "3.4"
 
 services:
+  ib-gateway:
+    image: waytrade/ib-gateway:1010
+    restart: always
+    environment:
+      TWS_USERID: ${TWS_USERID}
+      TWS_PASSWORD: ${TWS_PASSWORD}
+      TRADING_MODE: ${TRADING_MODE:-live}
+      VNC_SERVER_PASSWORD: ${VNC_SERVER_PASSWORD:-}
+    ports:
+      - "4001:4001"
+      - "4002:4002"
+      - "5900:5900"
+
   ib-api-service:
     build:
       context: .
       dockerfile: ./Dockerfile
     environment:
       SERVER_PORT: 3000
-      TWS_USERID: ${TWS_USERID}
-      TWS_PASSWORD: ${TWS_PASSWORD}
-      TRADING_MODE: ${TRADING_MODE:-live}
+      IB_GATEWAY_PORT: 4002
+      IB_GATEWAY_HOST: "ib-gateway"
     ports:
-      - "5900:5900"
       - "3002:3000"

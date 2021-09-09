@@ -1,4 +1,5 @@
 {
   "SERVER_PORT": 3002,
+  "IB_GATEWAY_PORT": 4002,
   "LOG_LEVEL": "debug"
 }

@@ -17,13 +17,6 @@ export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
 
   /** Called when the app shall boot up. */
   protected async boot(): Promise<void> {
-    // overwrite port if TRADING_MODE is specified
-    if (this.config.TRADING_MODE === "live") {
-      this.config.IB_GATEWAY_PORT = 4001;
-    } else if (this.config.TRADING_MODE === "paper") {
-      this.config.IB_GATEWAY_PORT = 4002;
-    }
-
     this.info(`Booting ib-api-service at port ${this.config.SERVER_PORT}`);
     this.info(`IB Gateway host: ${this.config.IB_GATEWAY_HOST}`);
     this.info(`IB Gateway port: ${this.config.IB_GATEWAY_PORT}`);
