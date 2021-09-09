@@ -12,7 +12,7 @@ We use this app as part of our microservice ecosystem and it is OSS so you don't
 
 ---
 
-## How run the docker container
+## How run the standalone docker container
 
 Create an .env file on root folder with:
 
@@ -34,12 +34,14 @@ ib-api-service:
   restart: always
   environment:
     SERVER_PORT: 3000
-    TWS_USERID: ${TWS_USERID}
-    TWS_PASSWORD: ${TWS_PASSWORD}
-    TRADING_MODE: ${TRADING_MODE:-live}
+    IB_GATEWAY_PORT: 4002
+    IB_GATEWAY_HOST: ib-gateway
   ports:
     - 3000:3000
 ```
+
+See [ib-gateway-docker](https://github.com/waytrade/ib-gateway-docker) for
+an Interactive Brokers Gateway on docker.
 
 ---
 
