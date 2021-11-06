@@ -6,31 +6,14 @@ import {
   HttpStatus,
   inject,
   MicroserviceRequest,
-  MicroserviceStream,
   queryParameter,
   response,
   responseBody,
   summary,
-  websocket,
 } from "@waytrade/microservice-core";
-import {
-  EventStreamCommand,
-  EventToStreamDispatcher,
-} from "@waytrade/microservice-core/dist/util/event-to-stream-dispatcher";
-import {Observable} from "rxjs";
 import {IBApiApp} from "../app";
-import {AccountSummary} from "../models/account-summary.model";
 import {ContractDetails} from "../models/contract-details.model";
-import {IBApiEvent} from "../models/ib-api-event";
-import {MarketDataUpdate} from "../models/market-data.model";
-import {PositionsUpdate} from "../models/position.model";
 import {IBApiService} from "../services/ib-api.service";
-
-/** An event source from IBApiService. */
-type IBApiEventSource = (
-  service: IBApiService,
-  args: string[],
-) => Observable<unknown>;
 
 /**
  * Event types.
@@ -98,7 +81,7 @@ export class IBApiController {
   // Event stream
   //
 
-  /** A map of all event types, with function to get the source Observable. */
+  /** A map of all event types, with function to get the source Observable.
   private readonly EVENT_SOURCES = new Map<IBApiEventType, IBApiEventSource>([
     [
       IBApiEventType.AccountSummaries,
@@ -141,4 +124,5 @@ export class IBApiController {
   createEventStream(stream: MicroserviceStream): void {
     new EventToStreamDispatcher(stream, this.apiService, this.EVENT_SOURCES);
   }
+  */
 }
