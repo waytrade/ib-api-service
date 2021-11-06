@@ -36,10 +36,6 @@ export class SecurityUtils {
   static ensureAuthorization(request: MicroserviceRequest): void {
     // get the bearer token from request headers
 
-    if (!request.headers) {
-      throw new HttpError(HttpStatus.UNAUTHORIZED, "No authorization header");
-    }
-
     let bearerToken = request.headers.get("authorization");
     if (!bearerToken) {
       const cookie = request.headers.get("cookie");
@@ -64,6 +60,10 @@ export class SecurityUtils {
 
     // verify the JWT
 
-    jwt.verify(bearerToken.substr("Bearer ".length), JWT_SECRET);
+    try {
+      jwt.verify(bearerToken.substr("Bearer ".length), JWT_SECRET);
+    } catch (e) {
+      throw new HttpError(HttpStatus.UNAUTHORIZED, (<Error>e).message);
+    }
   }
 }
