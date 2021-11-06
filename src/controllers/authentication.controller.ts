@@ -11,7 +11,7 @@ import {
   summary,
 } from "@waytrade/microservice-core";
 import {UsernamePassword} from "../models/username-password.model";
-import {AuthenticationService} from "../services/auth.service";
+import {AuthenticationService} from "../services/authentication.service";
 
 /**
  * The user authentication controller.

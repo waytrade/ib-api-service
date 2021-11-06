@@ -3,7 +3,6 @@ import {
   HttpStatus,
   MicroserviceRequest,
 } from "@waytrade/microservice-core";
-import * as bcrypt from "bcrypt";
 import Cookie from "cookie";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -18,18 +17,10 @@ const JWT_TOKEN_LIFETIME = 60 * 60 * 24; // 60s * 60m * 24h = 1day
  * Collection of security-related helper functions.
  */
 export class SecurityUtils {
-  /** Hash a cleartext string. */
-  static async hash(text: string): Promise<string> {
-    return await bcrypt.hash(text, 10);
-  }
-
   /** Create a JWT token. */
-  static createJWT(permissionGrants: string[]): string {
+  static createJWT(): string {
     return jwt.sign(
       {
-        data: {
-          permissionGrants,
-        },
         exp: Math.floor(Date.now() / 1000) + JWT_TOKEN_LIFETIME,
       },
       JWT_SECRET,
@@ -37,15 +28,12 @@ export class SecurityUtils {
   }
 
   /**
-   * Verify that authorization headers contains a valid JWT token and the
-   * required permission is granted.
+   * Verify that authorization headers contains a valid JWT token, signed
+   * by this service instance.
    *
    * @throws a HttpError if failed.
    */
-  static ensurePermission(
-    requiredPermission: string,
-    request: MicroserviceRequest,
-  ): void {
+  static ensureAuthorization(request: MicroserviceRequest): void {
     // get the bearer token from request headers
 
     if (!request.headers) {
@@ -74,27 +62,8 @@ export class SecurityUtils {
       );
     }
 
-    // decode the JWT
+    // verify the JWT
 
-    const jwtToken = bearerToken.substr("Bearer ".length);
-
-    try {
-      const jwtData = jwt.verify(jwtToken, JWT_SECRET);
-
-      // verify permissoin grants
-
-      const permissionGrants = (<Record<string, string[]>>jwtData)
-        .permissionGrants;
-
-      const hasPermission =
-        permissionGrants.find(v => v === "*" || v === requiredPermission) !==
-        undefined;
-
-      if (!hasPermission) {
-        throw new HttpError(HttpStatus.FORBIDDEN, "Missing permisson");
-      }
-    } catch (e) {
-      throw e;
-    }
+    jwt.verify(bearerToken.substr("Bearer ".length), JWT_SECRET);
   }
 }

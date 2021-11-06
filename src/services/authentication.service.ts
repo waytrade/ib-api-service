@@ -24,9 +24,6 @@ export class AuthenticationService {
       throw new Error("Wrong username or password");
     }
 
-    // grants all perimissions by default
-    const permissoinGrants = ["*"];
-
-    return SecurityUtils.createJWT(permissoinGrants);
+    return SecurityUtils.createJWT();
   }
 }

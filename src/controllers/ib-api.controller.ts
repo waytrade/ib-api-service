@@ -60,7 +60,7 @@ export class IBApiController {
   @responseBody(ContractDetails)
   @bearerAuth([])
   async getContractDetails(req: MicroserviceRequest): Promise<ContractDetails> {
-    SecurityUtils.ensurePermission("getContractDetails", req);
+    SecurityUtils.ensureAuthorization(req);
 
     // verify state and arguments
 

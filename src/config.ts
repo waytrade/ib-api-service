@@ -10,6 +10,12 @@ export interface IBApiServiceConfig extends MicroserviceConfig {
   /** Host of the IB Gateway. */
   IB_GATEWAY_HOST?: string;
 
+  /**
+   * Number of re-connect tries when connection to IB Gateway drops,
+   * before the App will shutdown.
+   */
+  IB_GATEWAY_RECONNECT_TRIES?: number;
+
   /** The username for login on the REST API. */
   REST_API_USERNAME?: string;
 
@@ -21,7 +27,4 @@ export interface IBApiServiceConfig extends MicroserviceConfig {
    * Multiple linked accounts with different base currency are not supported (yet?).
    */
   BASE_CURRENCY?: string;
-
-  /** The trading mode. Used on docker to switch port when in paper trading mode. */
-  DOCKER_TRADING_MODE?: string;
 }
