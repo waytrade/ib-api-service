@@ -1,11 +1,11 @@
 # Interactive Brokers REST/Websock Server (ib-api-service)
 
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/waytrade/ib-api-service)
-[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/waytrade/ib-api-service.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/waytrade/ib-api-service/context:javascript)
-
 [![Test and Publish](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/waytrade/ib-api-service/actions/workflows/publish.yml)
+
 [![Test Report](https://raw.githubusercontent.com/waytrade/microservice-core/master/assets/test-results.svg)](https://waytrade.github.io/ib-api-service/jest/)
 [![Core Coverage](https://raw.githubusercontent.com/waytrade/ib-api-service/gh-pages/coverage/coverage.svg)](https://waytrade.github.io/ib-api-service/coverage/lcov-report)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/waytrade/ib-api-service.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/waytrade/ib-api-service/context:javascript)
 
 This App implements a REST API (with OpenAPI spec and SwaggerUI) + a Websocket Server on top of https://github.com/stoqey/ib.
 
