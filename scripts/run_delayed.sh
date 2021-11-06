@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# start IBGateway
+/root/scripts/run.sh &
+
 echo "Starting ib-api-service in 40s..."
 sleep 20
 

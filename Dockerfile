@@ -28,7 +28,17 @@ RUN yarn install --production
 # Stage 2: Image creation
 #
 
-FROM ghcr.io/waytrade/microservice-core/production:latest
+# We use waytrade/ib-gateway as base image instead of waytrade/microservice-core
+# and install microservice deps manually
+FROM waytrade/ib-gateway:1010
+# Install node.js and yarn
+RUN apt-get update -y
+RUN apt-get install -y curl ca-certificates
+RUN curl --silent --location https://deb.nodesource.com/setup_14.x | bash -
+RUN apt-get install -y nodejs
+RUN npm install --global yarn
+# ld-linux-x86-64 is required by uWebsocket
+RUN ln -s /lib64/ld-linux-x86-64.so.2 /lib/ld-linux-x86-64.so.2
 
 WORKDIR /usr/src/app
 
