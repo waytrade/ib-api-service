@@ -10,6 +10,12 @@ export interface IBApiServiceConfig extends MicroserviceConfig {
   /** Host of the IB Gateway. */
   IB_GATEWAY_HOST?: string;
 
+  /** The username for login on the REST API. */
+  REST_API_USERNAME?: string;
+
+  /** The password for login on the REST API. */
+  REST_API_PASSWORD?: string;
+
   /**
    * Base currency of the IB account(s).
    * Multiple linked accounts with different base currency are not supported (yet?).

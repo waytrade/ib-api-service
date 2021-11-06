@@ -1,5 +1,7 @@
 {
   "SERVER_PORT": 3002,
+  "REST_API_USERNAME": "test",
+  "REST_API_PASSWORD": "test",
   "IB_GATEWAY_PORT": 4002,
   "LOG_LEVEL": "debug"
 }

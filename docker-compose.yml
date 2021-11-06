@@ -7,12 +7,10 @@ services:
       dockerfile: ./Dockerfile
     environment:
       SERVER_PORT: 3000
-      IB_GATEWAY_PORT: 4000
-      IB_GATEWAY_HOST: "localhost"
       TWS_USERID: ${TWS_USERID}
       TWS_PASSWORD: ${TWS_PASSWORD}
       TRADING_MODE: ${TRADING_MODE:-live}
       VNC_SERVER_PASSWORD: ${VNC_SERVER_PASSWORD:-}
     ports:
-      - "3002:3000"
+      - "3000:3000"
       - "5900:5900"

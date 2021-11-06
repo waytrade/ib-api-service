@@ -1,7 +1,6 @@
 import * as IB from "@stoqey/ib";
 import {DiffTools, inject, MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
-import {exit} from "process";
 import {
   auditTime,
   firstValueFrom,
@@ -15,7 +14,6 @@ import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
-import {IBApiLoggerProxy} from "../utils/ib-api-logger-proxy";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
 
 /** Debounce time on market data ticks. */
@@ -52,9 +50,6 @@ export class IBApiService {
   /** The [[IBApiNext]] instance. */
   private api!: IB.IBApiNext;
 
-  /** Subscription on connection date. */
-  private connectionState$?: Subscription;
-
   /** Cache of a requested contract details, with conId as key. */
   private readonly contractDetailsCache = new LruCache<
     number,
@@ -65,71 +60,7 @@ export class IBApiService {
 
   /** Start the service. */
   start(): void {
-    // init IBApiNext
-
-    if (!this.app.config.IB_GATEWAY_PORT) {
-      throw new Error("IB_GATEWAY_PORT not configured.");
-    }
-
-    if (!this.app.config.IB_GATEWAY_HOST) {
-      throw new Error("IB_GATEWAY_HOST not configured.");
-    }
-
-    this.api = new IB.IBApiNext({
-      port: this.app.config.IB_GATEWAY_PORT,
-      host: this.app.config.IB_GATEWAY_HOST,
-      logger: new IBApiLoggerProxy(this.app),
-      connectionWatchdogInterval: 30,
-      reconnectInterval: 5000,
-    });
-
-    switch (this.app.config.LOG_LEVEL) {
-      case "debug":
-        this.api.logLevel = IB.LogLevel.DETAIL;
-        break;
-      case "info":
-        this.api.logLevel = IB.LogLevel.INFO;
-        break;
-      case "warn":
-        this.api.logLevel = IB.LogLevel.WARN;
-        break;
-      case "error":
-        this.api.logLevel = IB.LogLevel.ERROR;
-        break;
-    }
-
-    // exit on connection loss
-
-    const mayReconnectTries = 5;
-    let connectionTries = 0;
-
-    this.connectionState$ = this.api.connectionState.subscribe({
-      next: state => {
-        switch (state) {
-          case IB.ConnectionState.Connecting:
-            connectionTries++;
-            break;
-          case IB.ConnectionState.Disconnected:
-            if (connectionTries > mayReconnectTries) {
-              this.app.error("Lost connection to IB Gateway, rebooting...");
-              this.app.stop();
-              exit(1);
-            }
-            break;
-        }
-      },
-    });
-
-    // connect to IB Gateway
-
-    this.api.connect(0);
-  }
-
-  /** Stop the service. */
-  stop(): void {
-    this.connectionState$?.unsubscribe();
-    delete this.connectionState$;
-    this.api?.disconnect();
+    this.api = this.app.ibApi;
   }
 
   /** Observe the account summaries. */

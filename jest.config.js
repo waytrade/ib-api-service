@@ -6,7 +6,13 @@ module.exports = {
   // Reporters for CircleCI
   // This causes jest to always output JUnit XML. To override this functionality
   // we add --reporters=default to Jest commands.
-  reporters: ["default", "jest-junit"],
+  reporters: [
+    "default",
+    "jest-junit",
+    ["./node_modules/jest-html-reporter", {
+      "pageTitle": "Test Report"
+    }],
+  ],
 
   // All imported modules in your tests should be mocked automatically
   // automock: false,
@@ -24,35 +30,38 @@ module.exports = {
   // clearMocks: false,
 
   // Indicates whether the coverage information should be collected while executing the test
-  // collectCoverage: false,
+  collectCoverage: true,
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
   // collectCoverageFrom: null,
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: "coverage",
+  coverageDirectory: "test-report/coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
-  // coveragePathIgnorePatterns: [
-  //   "\\\\node_modules\\\\"
-  // ],
+  coveragePathIgnorePatterns: [
+     "/src/apis/",
+     "src/__tests__/mock/"
+  ],
 
   // A list of reporter names that Jest uses when writing coverage reports
-  // coverageReporters: [
-  //   "json",
-  //   "text",
-  //   "lcov",
-  //   "clover"
-  // ],
+  coverageReporters: [
+      //"json",
+      //"json-summary",
+      "lcov",
+      //"html",
+      //"text",
+      "text-summary"
+  ],
 
   // Report coverage in lcov for Code Climate
-  coverageReporters: ["lcov"],
+  // coverageReporters: ["lcov"],
 
   // An object that configures minimum threshold enforcement for coverage results
   // coverageThreshold: null,
 
   // Make calling deprecated APIs throw helpful error messages
-  // errorOnDeprecated: false,
+  errorOnDeprecated: true,
 
   // Force coverage collection from ignored files usin a array of glob patterns
   // forceCoverageMatch: [],
@@ -158,7 +167,7 @@ module.exports = {
   // testRegex: "",
 
   // This option allows the use of a custom results processor
-  // testResultsProcessor: null,
+  testResultsProcessor: "./node_modules/jest-html-reporter",
 
   // This option allows use of a custom test runner
   // testRunner: "jasmine2",

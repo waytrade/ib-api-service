@@ -1,8 +1,10 @@
 {
   "SERVER_PORT": 3000,
   "SERVER_HOST": "localhost",
+  "REST_API_USERNAME": "default-user",
+  "REST_API_PASSWORD": "default-password",
+  "IB_GATEWAY_PORT": 4000,
+  "IB_GATEWAY_HOST": "localhost",
   "LOG_LEVEL": "info",
-  "IB_GATEWAY_PORT": 4001,
-  "IB_GATEWAY_HOST": "ib-gateway",
   "BASE_CURRENCY": "EUR"
 }

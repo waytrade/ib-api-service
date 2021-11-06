@@ -1,4 +1,5 @@
 import {
+  bearerAuth,
   controller,
   description,
   get,
@@ -14,6 +15,7 @@ import {
 import {IBApiApp} from "../app";
 import {ContractDetails} from "../models/contract-details.model";
 import {IBApiService} from "../services/ib-api.service";
+import {SecurityUtils} from "../utils/security.utils";
 
 /**
  * Event types.
@@ -53,18 +55,22 @@ export class IBApiController {
   @queryParameter("conId", Number, true, "The IB contract id.")
   @response(HttpStatus.BAD_REQUEST)
   @response(HttpStatus.NOT_FOUND)
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @response(HttpStatus.FORBIDDEN, "Unauthorized: wrong username or password.")
   @responseBody(ContractDetails)
-  async getContractDetails(
-    request: MicroserviceRequest,
-  ): Promise<ContractDetails> {
+  @bearerAuth([])
+  async getContractDetails(req: MicroserviceRequest): Promise<ContractDetails> {
+    SecurityUtils.ensurePermission("getContractDetails", req);
+
     // verify state and arguments
 
-    const conId = Number(request.queryParams.conId);
+    const conId = Number(req.queryParams.conId);
     if (conId === undefined || isNaN(conId)) {
       throw new HttpError(HttpStatus.BAD_REQUEST);
     }
 
     // request contract details
+
     return new Promise<ContractDetails>((resolve, reject) => {
       this.apiService
         .getContractDetails(Number(conId))
