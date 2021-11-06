@@ -69,3 +69,4 @@ yarn-error.log
 /.npmrc
 /*.env2
 /junit.xml
+/test-report

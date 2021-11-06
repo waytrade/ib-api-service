@@ -18,7 +18,7 @@
     "lint": "yarn eslint",
     "lint:fix": "yarn eslint:fix",
     "jest": "rm -rf test-report && jest --maxConcurrency=1 --reporters=default --useStderr --detectOpenHandles --runInBand --verbose --coverage --no-cache",
-    "jest:ci": "rm -rf test-report && jest --maxConcurrency=1 --reporters=default --useStderr --forceExit --runInBand --verbose --coverage --no-cache",
+    "jest:ci": "rm -rf test-report && jest --maxConcurrency=1 --reporters=default --useStderr --runInBand --verbose --coverage --no-cache",
     "create-lcov-badge": "lcov-badge2 -o ./test-report/coverage/coverage.svg -l \"Code Coverage\" ./test-report/coverage/lcov.info",
     "test": "yarn jest && yarn create-lcov-badge",
     "test:ci": "yarn jest:ci && yarn create-lcov-badge",
@@ -45,9 +45,9 @@
     "@waytrade/microservice-core": "^0.9.77",
     "bcrypt": "^5.0.1",
     "cookie": "^0.4.1",
-    "jest-html-reporter": "^3.4.1",
     "jsonwebtoken": "^8.5.1",
     "lru-cache": "^6.0.0",
+    "prettier": "^2.4.1",
     "rxjs": "^7.3.1"
   },
   "devDependencies": {
@@ -58,11 +58,12 @@
     "eslint": "^8.2.0",
     "eslint-plugin-rxjs": "^4.0.1",
     "jest": "^27.3.1",
+    "jest-html-reporter": "^3.4.1",
     "jest-junit": "^13.0.0",
+    "lcov-badge2": "^1.0.2",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.20",
     "ts-jest": "^27.0.7",
-    "typescript": "~4.3.5",
-    "lcov-badge2": "^1.0.2"
+    "typescript": "~4.3.5"
   }
 }
