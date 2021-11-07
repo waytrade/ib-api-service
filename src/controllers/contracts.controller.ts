@@ -34,8 +34,8 @@ export enum IBApiEventType {
   MarketData = "marketData",
 }
 
-/** The Brokers API controller. */
-@controller("Broker API", "/api")
+/** The Contracts Dataase controller. */
+@controller("Contracts Dataase", "/contracts")
 export class BrokerApiController {
   @inject("IBApiApp")
   private app!: IBApiApp;
@@ -47,7 +47,7 @@ export class BrokerApiController {
   // REST functions
   //
 
-  @get("/contractDetails")
+  @get("/details")
   @summary("Get contract details.")
   @description("Get the contract details of a given contract ID.")
   @queryParameter("conId", Number, true, "The IB contract ID.")
@@ -79,53 +79,4 @@ export class BrokerApiController {
       details,
     } as ContractDetailsList;
   }
-
-  //
-  // Event stream
-  //
-
-  /** A map of all event types, with function to get the source Observable.
-  private readonly EVENT_SOURCES = new Map<IBApiEventType, IBApiEventSource>([
-    [
-      IBApiEventType.AccountSummaries,
-      (service: IBApiService): Observable<AccountSummary[]> => {
-        return service.accountSummaries;
-      },
-    ],
-    [
-      IBApiEventType.Positions,
-      (service: IBApiService): Observable<PositionsUpdate> => {
-        return service.positions;
-      },
-    ],
-    [
-      IBApiEventType.MarketData,
-      (service: IBApiService, args: string[]): Observable<MarketDataUpdate> => {
-        if (args[0]) {
-          return service.getMarketData(Number(args[0]));
-        } else {
-          return new Observable(res =>
-            res.error(new Error("Invalid request: no conId argument")),
-          );
-        }
-      },
-    ],
-  ]);
-
-  @websocket("events")
-  @summary("Create an event-stream.")
-  @description(
-    "Update the connection to a WebSocket to receive a stream of IBApiEvent objects.</br>" +
-      `To subscribe for a specific event type, send '${EventStreamCommand.Subscribe}:&lt;eventType&gt;'.</br>` +
-      `To unsubscribe from a specific event type, send '${EventStreamCommand.Unsubscribe}:&lt;eventType&gt;'.</br>` +
-      "Avaiable event types:</br><ul>" +
-      `<li>${IBApiEventType.AccountSummaries}</li>` +
-      `<li>${IBApiEventType.Positions}</li>` +
-      `<li>${IBApiEventType.MarketData}:<conId></li>`,
-  )
-  @responseBody(IBApiEvent)
-  createEventStream(stream: MicroserviceStream): void {
-    new EventToStreamDispatcher(stream, this.apiService, this.EVENT_SOURCES);
-  }
-  */
 }

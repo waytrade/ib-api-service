@@ -4,7 +4,7 @@ import path from "path";
 import {Subscription} from "rxjs";
 import {IBApiServiceConfig} from "./config";
 import {AuthenticatonController} from "./controllers/authentication.controller";
-import {BrokerApiController} from "./controllers/broker-api.controller";
+import {BrokerApiController} from "./controllers/contracts.controller";
 import {AuthenticationService} from "./services/authentication.service";
 import {IBApiService} from "./services/ib-api.service";
 import {IBApiLoggerProxy} from "./utils/ib-api-logger-proxy";

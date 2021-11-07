@@ -21,7 +21,7 @@ describe("Test Broker API", () => {
       REST_API_PASSWORD: TEST_PASSWORD,
     });
 
-    baseUrl = `http://127.0.0.1:${app.apiServerPort}/api`;
+    baseUrl = `http://127.0.0.1:${app.apiServerPort}/contracts`;
 
     authToken = (
       await axios.post<void>(
@@ -41,7 +41,7 @@ describe("Test Broker API", () => {
   test("Get contractDetails (no authorization)", async () => {
     try {
       await axios.get<ContractDetailsList>(
-        baseUrl + `/contractDetails?conId=9999999`,
+        baseUrl + `/details?conId=9999999`,
         {},
       );
       throw "This must fail";
@@ -52,7 +52,7 @@ describe("Test Broker API", () => {
 
   test("Get contractDetails (no contract details)", async () => {
     const res = await axios.get<ContractDetailsList>(
-      baseUrl + `/contractDetails?conId=9999999`,
+      baseUrl + `/details?conId=9999999`,
       {
         headers: {
           authorization: authToken,
@@ -67,7 +67,7 @@ describe("Test Broker API", () => {
   test("Get contractDetails (invalid conId format)", async () => {
     try {
       await axios.get<ContractDetailsList>(
-        baseUrl + `/contractDetails?conId=thisIsNoConID`,
+        baseUrl + `/details?conId=thisIsNoConID`,
         {
           headers: {
             authorization: authToken,
