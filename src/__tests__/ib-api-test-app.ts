@@ -1,16 +1,46 @@
-import {IBApiNext} from "@stoqey/ib";
-import path from "path";
+import {Subject} from "rxjs";
 import * as App from "../app";
 import {IBApiNextMock} from "./mock/ib-api-next.mock";
 
 /** IBApiApp with mocked IBApiNext */
 export class IBApiApp extends App.IBApiApp {
   constructor() {
-    super(path.resolve(__dirname, "../.."));
+    super(IBApiNextMock);
   }
-  /** Called when the app shall boot up. */
-  protected async boot(): Promise<void> {
-    this.info(`Booting ib-api-service mock at port ${this.config.SERVER_PORT}`);
-    this._ibApi = <IBApiNext>(<unknown>new IBApiNextMock());
+
+  readonly appStopped = new Subject<void>();
+
+  get ibApiMock(): IBApiNextMock {
+    return <IBApiNextMock>(<unknown>this.ibApi);
+  }
+
+  /** Stop the app. */
+  stop(): void {
+    super.stop();
+    this.appStopped.next();
+  }
+
+  readonly debugLog = new Subject<string>();
+
+  debug(msg: string, ...args: unknown[]): void {
+    this.debugLog.next(msg);
+  }
+
+  readonly infoLog = new Subject<string>();
+
+  info(msg: string, ...args: unknown[]): void {
+    this.infoLog.next(msg);
+  }
+
+  readonly warnLog = new Subject<string>();
+
+  warn(msg: string, ...args: unknown[]): void {
+    this.warnLog.next(msg);
+  }
+
+  readonly errorLog = new Subject<string>();
+
+  error(msg: string, ...args: unknown[]): void {
+    this.errorLog.next(msg);
   }
 }

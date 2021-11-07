@@ -41,7 +41,7 @@ module.exports = {
   // An array of regexp pattern strings used to skip coverage collection
   coveragePathIgnorePatterns: [
      "/src/apis/",
-     "src/__tests__/mock/"
+     "src/__tests__/"
   ],
 
   // A list of reporter names that Jest uses when writing coverage reports

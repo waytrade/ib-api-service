@@ -1,10 +1,8 @@
 import * as IB from "@stoqey/ib";
-import {DiffTools, inject, MapExt, service} from "@waytrade/microservice-core";
+import {inject, MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {
-  auditTime,
-  firstValueFrom,
-  map,
+  lastValueFrom,
   Observable,
   Subject,
   Subscription,
@@ -12,12 +10,9 @@ import {
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
-import {MarketData, MarketDataUpdate} from "../models/market-data.model";
+import {PnL} from "../models/pnl.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
-
-/** Debounce time on market data ticks. */
-const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
 
 /**
  * Account summary tag values, make suer this is in sync with
@@ -26,17 +21,36 @@ const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
  * Ecented AccountSummary model if you extend this!!
  */
 export const ACCOUNT_SUMMARY_TAGS = [
+  "AccountType",
   "NetLiquidation",
   "TotalCashValue",
   "SettledCash",
+  "AccruedCash",
   "BuyingPower",
+  "EquityWithLoanValue",
+  "PreviousEquityWithLoanValue",
   "GrossPositionValue",
+  "RegTEquity",
+  "RegTMargin",
+  "InitMarginReq",
+  "SMA",
   "InitMarginReq",
   "MaintMarginReq",
+  "AvailableFunds",
+  "ExcessLiquidity",
+  "Cushion",
   "FullInitMarginReq",
   "FullMaintMarginReq",
   "FullAvailableFunds",
   "FullExcessLiquidity",
+  "LookAheadNextChange",
+  "LookAheadInitMarginReq",
+  "LookAheadMaintMarginReq",
+  "LookAheadAvailableFunds",
+  "LookAheadExcessLiquidity",
+  "HighestSeverity",
+  "DayTradesRemaining",
+  "Leverage",
 ];
 
 /**
@@ -53,7 +67,7 @@ export class IBApiService {
   /** Cache of a requested contract details, with conId as key. */
   private readonly contractDetailsCache = new LruCache<
     number,
-    IB.ContractDetails
+    IB.ContractDetails[]
   >({
     max: 128,
   });
@@ -61,6 +75,41 @@ export class IBApiService {
   /** Start the service. */
   start(): void {
     this.api = this.app.ibApi;
+  }
+
+  /** Get the contract details for contract that match the given criteria. */
+  async getContractDetails(
+    contract: IB.Contract,
+  ): Promise<IB.ContractDetails[]> {
+    if (contract.conId) {
+      const cache = this.contractDetailsCache.get(contract.conId);
+      if (cache) {
+        return cache;
+      }
+    }
+
+    const details = await lastValueFrom(
+      this.api?.getContractDetails(contract),
+      {
+        defaultValue: {all: []} as IB.ContractDetailsUpdate,
+      },
+    );
+
+    if (contract.conId && details.all.length) {
+      this.contractDetailsCache.set(contract.conId, details.all);
+    }
+
+    return details.all;
+  }
+
+  /** Get the accounts to which the logged user has access to. */
+  getManagedAccounts(): Promise<string[]> {
+    return this.api.getManagedAccounts();
+  }
+
+  /** Get real time daily PnL and unrealized PnL updates. */
+  getPnL(account: string): Observable<PnL> {
+    return this.api.getPnL(account) as Observable<PnL>;
   }
 
   /** Observe the account summaries. */
@@ -121,7 +170,6 @@ export class IBApiService {
             }
 
             // subscribe on account PnLs
-
             updated.forEach((_tagValues, accountId) => {
               if (subscribedPnlAccounts.has(accountId)) {
                 return;
@@ -149,6 +197,9 @@ export class IBApiService {
                   },
                 });
             });
+          },
+          complete: () => {
+            res.complete();
           },
         });
 
@@ -184,23 +235,29 @@ export class IBApiService {
               ...(update.added?.entries() ?? []),
             ]);
 
+            const zeroSizedIds: string[] = [];
+
             updated.forEach((positions, accountId) => {
               positions.forEach(ibPosition => {
-                if (!ibPosition.pos) {
-                  return;
-                }
-
                 const posId = Helper.formatPositionId(
                   accountId,
                   ibPosition.contract.conId,
                 );
+
+                if (!ibPosition.pos) {
+                  if (previosPositions.has(posId)) {
+                    zeroSizedIds.push(posId);
+                  }
+                  return;
+                }
 
                 let hasChanged = false;
                 const prevPositions = previosPositions.getOrAdd(posId, () => {
                   hasChanged = true;
                   return new Position({
                     id: posId,
-                    conId: "" + ibPosition.contract.conId,
+                    account: accountId,
+                    conId: ibPosition.contract.conId,
                     pos: ibPosition.pos,
                   });
                 });
@@ -218,28 +275,26 @@ export class IBApiService {
 
             // collect closed
 
-            const removedIds: string[] = [];
+            const removedIds = new Set(zeroSizedIds);
             update.removed?.forEach((positions, account) => {
               positions.forEach(pos => {
-                const conId = Helper.formatPositionId(
-                  account,
-                  pos.contract.conId,
-                );
-                previosPositions.delete(conId);
-                removedIds.push(
-                  Helper.formatPositionId(account, pos.contract.conId),
-                );
+                const id = Helper.formatPositionId(account, pos.contract.conId);
+                removedIds.add(id);
               });
+            });
+
+            removedIds.forEach(id => {
+              previosPositions.delete(id);
             });
 
             // emit update event
 
-            if (changed.size || removedIds.length) {
+            if (changed.size || removedIds.size) {
               res.next({
                 changed: changed.size
                   ? Array.from(changed.values())
                   : undefined,
-                closed: removedIds.length ? removedIds : undefined,
+                closed: removedIds.size ? Array.from(removedIds) : undefined,
               });
             }
 
@@ -275,10 +330,16 @@ export class IBApiService {
                       );
                     },
                     next: pnl => {
-                      const prePos = previosPositions.get(posId);
-                      if (!prePos) {
+                      let prePos = previosPositions.get(posId);
+
+                      if (pnl.position !== undefined && !pnl.position) {
+                        previosPositions.delete(posId);
+                        res.next({
+                          closed: [posId],
+                        });
                         return;
                       }
+
                       const changedPos: Position = {id: posId};
                       if (prePos?.dailyPnL !== pnl.dailyPnL) {
                         changedPos.dailyPnL = pnl.dailyPnL;
@@ -295,6 +356,17 @@ export class IBApiService {
                       if (prePos?.unrealizedPnL !== pnl.unrealizedPnL) {
                         changedPos.unrealizedPnL = pnl.unrealizedPnL;
                       }
+
+                      if (!prePos) {
+                        prePos = {
+                          id: posId,
+                        };
+                        Object.assign(prePos, changedPos);
+                        previosPositions.set(posId, prePos);
+                      } else {
+                        Object.assign(prePos, changedPos);
+                      }
+
                       if (Object.keys(changedPos).length > 1) {
                         res.next({
                           changed: [changedPos],
@@ -320,24 +392,7 @@ export class IBApiService {
     });
   }
 
-  /** Get the contract details for a ficen conid */
-  getContractDetails(conId: number): Promise<IB.ContractDetails> {
-    const details = this.contractDetailsCache.get(conId);
-    if (details) {
-      return new Promise<IB.ContractDetails>(resolve => resolve(details));
-    }
-
-    return firstValueFrom(
-      this.api?.getContractDetails({conId}).pipe(
-        map((v: IB.ContractDetailsUpdate) => {
-          this.contractDetailsCache.set(conId, v.all[0]);
-          return v.all[0];
-        }),
-      ),
-    );
-  }
-
-  /** Get market data updates for the given conId.  */
+  /** Get market data updates for the given conId.
   getMarketData(conId: number): Observable<MarketDataUpdate> {
     return new Observable<MarketDataUpdate>(subscriber => {
       const cancel = new Subject();
@@ -407,5 +462,5 @@ export class IBApiService {
         }
       };
     });
-  }
+  }*/
 }

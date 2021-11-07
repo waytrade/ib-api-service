@@ -9,13 +9,17 @@ export class Position {
     Object.assign(this, contract);
   }
 
-  /** The positions id. */
+  /** The position id. */
   @property("The position id.")
   id!: string;
 
+  /** The account id. */
+  @property("The account id.")
+  account?: string;
+
   /** The position's contract id. */
   @property("The position's contract id.")
-  conId?: string;
+  conId?: number;
 
   /** The number of positions held. */
   @property("The number of positions held.")

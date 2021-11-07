@@ -11,12 +11,10 @@ import {
   summary,
 } from "@waytrade/microservice-core";
 import {UsernamePassword} from "../models/username-password.model";
-import {AuthenticationService} from "../services/auth.service";
+import {AuthenticationService} from "../services/authentication.service";
 
-/**
- * The user authentication controller.
- */
-@controller("User Authentication", "/auth")
+/** The user authentication controller. */
+@controller("Authentication", "/auth")
 export class AuthenticatonController {
   @inject("AuthenticationService")
   private authService!: AuthenticationService;

@@ -42,10 +42,17 @@ export class IBApiServiceHelper {
     );
     tagValues.forEach((summaryValues, key) => {
       if (ACCOUNT_SUMMARY_TAGS.find(v => v === key)) {
-        const baseCurrencyValue = summaryValues.get(baseCurrency);
-        ((<unknown>accountSummary) as Record<string, number>)[
+        let value = summaryValues.get(baseCurrency);
+        if (!value) {
+          value = summaryValues.get("");
+        }
+        let val: number | string | undefined = Number(value?.value);
+        if (isNaN(val)) {
+          val = value?.value;
+        }
+        ((<unknown>accountSummary) as Record<string, unknown>)[
           key[0].toLowerCase() + key.substr(1)
-        ] = Number(baseCurrencyValue?.value);
+        ] = val;
       }
     });
     if (Object.keys(accountSummary).length === 1) {

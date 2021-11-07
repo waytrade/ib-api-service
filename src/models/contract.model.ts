@@ -1,5 +1,6 @@
 import * as IB from "@stoqey/ib";
-import {model, property} from "@waytrade/microservice-core";
+import {OptionType, SecType} from "@stoqey/ib";
+import {enumProperty, model, property} from "@waytrade/microservice-core";
 
 /**
  * A contract on Interactive Brokers.
@@ -19,8 +20,8 @@ export class Contract {
   symbol?: string;
 
   /** The security type. */
-  @property("The security type.")
-  secType?: IB.SecType;
+  @enumProperty("SecType", SecType, "The security type.")
+  secType?: SecType;
 
   /**
    * The contract's last trading day or contract month (for Options and Futures).
@@ -36,10 +37,12 @@ export class Contract {
   strike?: number;
 
   /** Either Put or Call (i.e. Options). Valid values are P, PUT, C, CALL. */
-  @property(
+  @enumProperty(
+    "OptionType",
+    OptionType,
     "Either Put or Call (i.e. Options). Valid values are P, PUT, C, CALL.",
   )
-  right?: IB.OptionType;
+  right?: OptionType;
 
   /** The instrument's multiplier (i.e. options, futures). */
   @property("The instrument's multiplier (i.e. options, futures).")
