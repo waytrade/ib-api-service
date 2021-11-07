@@ -36,6 +36,7 @@
     "node": ">=14.15.4"
   },
   "dependencies": {
+    "@types/ws": "^8.2.0",
     "@stoqey/ib": "^1.2.14",
     "@types/bcrypt": "^5.0.0",
     "@types/cookie": "^0.4.1",
@@ -47,7 +48,8 @@
     "jsonwebtoken": "^8.5.1",
     "lru-cache": "^6.0.0",
     "prettier": "^2.4.1",
-    "rxjs": "^7.3.1"
+    "rxjs": "^7.3.1",
+    "ws": "^8.2.3"
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",

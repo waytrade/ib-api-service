@@ -6,6 +6,7 @@ import {IBApiServiceConfig} from "./config";
 import {AccountController} from "./controllers/account.controller";
 import {AuthenticatonController} from "./controllers/authentication.controller";
 import {ContractsController} from "./controllers/contracts.controller";
+import {RealtimeDataController} from "./controllers/realtime-data.controller";
 import {AuthenticationService} from "./services/authentication.service";
 import {IBApiService} from "./services/ib-api.service";
 import {IBApiLoggerProxy} from "./utils/ib-api-logger-proxy";
@@ -20,6 +21,7 @@ export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
         AuthenticatonController,
         ContractsController,
         AccountController,
+        RealtimeDataController,
       ],
       services: [AuthenticationService, IBApiService],
     });

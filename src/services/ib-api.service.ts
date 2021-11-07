@@ -21,17 +21,36 @@ import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
  * Ecented AccountSummary model if you extend this!!
  */
 export const ACCOUNT_SUMMARY_TAGS = [
+  "AccountType",
   "NetLiquidation",
   "TotalCashValue",
   "SettledCash",
+  "AccruedCash",
   "BuyingPower",
+  "EquityWithLoanValue",
+  "PreviousEquityWithLoanValue",
   "GrossPositionValue",
+  "RegTEquity",
+  "RegTMargin",
+  "InitMarginReq",
+  "SMA",
   "InitMarginReq",
   "MaintMarginReq",
+  "AvailableFunds",
+  "ExcessLiquidity",
+  "Cushion",
   "FullInitMarginReq",
   "FullMaintMarginReq",
   "FullAvailableFunds",
   "FullExcessLiquidity",
+  "LookAheadNextChange",
+  "LookAheadInitMarginReq",
+  "LookAheadMaintMarginReq",
+  "LookAheadAvailableFunds",
+  "LookAheadExcessLiquidity",
+  "HighestSeverity",
+  "DayTradesRemaining",
+  "Leverage",
 ];
 
 /**
@@ -93,64 +112,6 @@ export class IBApiService {
     return this.api.getPnL(account) as Observable<PnL>;
   }
 
-  getAccountSummary(account?: string): Observable<AccountSummary> {
-    return new Observable<AccountSummary>(res => {
-      account = account ?? "All";
-
-      let tags = "";
-      ACCOUNT_SUMMARY_TAGS.forEach(tag => {
-        tags = tags + tag + ",";
-      });
-      tags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
-
-      let firstEvent = true;
-
-      const sub$ = this.api.getAccountSummary(account, tags).subscribe({
-        error: (error: IB.IBApiNextError) => {
-          this.app.error("IBApiNext.getAccountSummary: " + error.error.message);
-        },
-        next: update => {
-          // collect updated
-
-          const updated = new Map([
-            ...(update.changed?.entries() ?? []),
-            ...(update.added?.entries() ?? []),
-          ]);
-
-          const changed = new MapExt<string, AccountSummary>();
-          updated.forEach((tagValues, accountId) => {
-            Helper.colllectAccountSummaryTagValues(
-              accountId,
-              tagValues,
-              this.app.config.BASE_CURRENCY ?? "",
-              changed,
-            );
-          });
-
-          // add baseCurrency to first event
-
-          const changedArray = Array.from(changed.values());
-          if (firstEvent) {
-            changedArray.forEach(
-              v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
-            );
-            firstEvent = false;
-          }
-
-          // emit update event
-
-          if (changedArray.length) {
-            res.next(changedArray[0]);
-          }
-        },
-      });
-
-      return (): void => {
-        sub$.unsubscribe();
-      };
-    });
-  }
-
   /** Observe the account summaries. */
   get accountSummaries(): Observable<AccountSummary[]> {
     return new Observable<AccountSummary[]>(res => {
@@ -209,7 +170,6 @@ export class IBApiService {
             }
 
             // subscribe on account PnLs
-
             updated.forEach((_tagValues, accountId) => {
               if (subscribedPnlAccounts.has(accountId)) {
                 return;
@@ -275,23 +235,29 @@ export class IBApiService {
               ...(update.added?.entries() ?? []),
             ]);
 
+            const zeroSizedIds: string[] = [];
+
             updated.forEach((positions, accountId) => {
               positions.forEach(ibPosition => {
-                if (!ibPosition.pos) {
-                  return;
-                }
-
                 const posId = Helper.formatPositionId(
                   accountId,
                   ibPosition.contract.conId,
                 );
+
+                if (!ibPosition.pos) {
+                  if (previosPositions.has(posId)) {
+                    zeroSizedIds.push(posId);
+                  }
+                  return;
+                }
 
                 let hasChanged = false;
                 const prevPositions = previosPositions.getOrAdd(posId, () => {
                   hasChanged = true;
                   return new Position({
                     id: posId,
-                    conId: "" + ibPosition.contract.conId,
+                    account: accountId,
+                    conId: ibPosition.contract.conId,
                     pos: ibPosition.pos,
                   });
                 });
@@ -309,28 +275,26 @@ export class IBApiService {
 
             // collect closed
 
-            const removedIds: string[] = [];
+            const removedIds = new Set(zeroSizedIds);
             update.removed?.forEach((positions, account) => {
               positions.forEach(pos => {
-                const conId = Helper.formatPositionId(
-                  account,
-                  pos.contract.conId,
-                );
-                previosPositions.delete(conId);
-                removedIds.push(
-                  Helper.formatPositionId(account, pos.contract.conId),
-                );
+                const id = Helper.formatPositionId(account, pos.contract.conId);
+                removedIds.add(id);
               });
+            });
+
+            removedIds.forEach(id => {
+              previosPositions.delete(id);
             });
 
             // emit update event
 
-            if (changed.size || removedIds.length) {
+            if (changed.size || removedIds.size) {
               res.next({
                 changed: changed.size
                   ? Array.from(changed.values())
                   : undefined,
-                closed: removedIds.length ? removedIds : undefined,
+                closed: removedIds.size ? Array.from(removedIds) : undefined,
               });
             }
 
@@ -366,10 +330,16 @@ export class IBApiService {
                       );
                     },
                     next: pnl => {
-                      const prePos = previosPositions.get(posId);
-                      if (!prePos) {
+                      let prePos = previosPositions.get(posId);
+
+                      if (pnl.position !== undefined && !pnl.position) {
+                        previosPositions.delete(posId);
+                        res.next({
+                          closed: [posId],
+                        });
                         return;
                       }
+
                       const changedPos: Position = {id: posId};
                       if (prePos?.dailyPnL !== pnl.dailyPnL) {
                         changedPos.dailyPnL = pnl.dailyPnL;
@@ -386,6 +356,17 @@ export class IBApiService {
                       if (prePos?.unrealizedPnL !== pnl.unrealizedPnL) {
                         changedPos.unrealizedPnL = pnl.unrealizedPnL;
                       }
+
+                      if (!prePos) {
+                        prePos = {
+                          id: posId,
+                        };
+                        Object.assign(prePos, changedPos);
+                        previosPositions.set(posId, prePos);
+                      } else {
+                        Object.assign(prePos, changedPos);
+                      }
+
                       if (Object.keys(changedPos).length > 1) {
                         res.next({
                           changed: [changedPos],

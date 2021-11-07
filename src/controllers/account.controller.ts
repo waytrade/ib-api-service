@@ -40,8 +40,8 @@ export class AccountController {
   }
 
   @get("/pnl")
-  @summary("Get the managed accounts.")
-  @description("Get the accounts to which the logged user has access to.")
+  @summary("Get the Profit&Loss of an account.")
+  @description("Get a snapshot of the current Profit&Loss on a given account.")
   @queryParameter("account", String, true, "The IB account ID.")
   @response(HttpStatus.BAD_REQUEST)
   @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")

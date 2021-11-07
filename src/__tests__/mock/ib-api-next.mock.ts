@@ -1,4 +1,5 @@
 import {
+  AccountPositionsUpdate,
   ConnectionState,
   Contract,
   ContractDetails,
@@ -6,8 +7,9 @@ import {
   IBApiNextCreationOptions,
   Logger,
   PnL,
+  PnLSingle,
 } from "@stoqey/ib";
-import {BehaviorSubject, Observable, Subject} from "rxjs";
+import {BehaviorSubject, Observable, ReplaySubject, Subject} from "rxjs";
 
 /**
  * Mock implementation for @stoqey/ib's IBApiNext that will
@@ -77,5 +79,23 @@ export class IBApiNextMock {
         next: v => res.next(v),
       });
     });
+  }
+
+  readonly currentPositionsUpdate = new ReplaySubject<AccountPositionsUpdate>(
+    1,
+  );
+
+  getPositions(): Observable<AccountPositionsUpdate> {
+    return this.currentPositionsUpdate;
+  }
+
+  readonly currentPnLSingle = new ReplaySubject<PnLSingle>(1);
+
+  getPnLSingle(
+    account: string,
+    modelCode: string,
+    conId: number,
+  ): Observable<PnLSingle> {
+    return this.currentPnLSingle;
   }
 }
