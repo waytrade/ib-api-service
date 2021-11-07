@@ -57,6 +57,31 @@ export class IBApiService {
     this.api = this.app.ibApi;
   }
 
+  /** Get the contract details for contract that match the given criteria. */
+  async getContractDetails(
+    contract: IB.Contract,
+  ): Promise<IB.ContractDetails[]> {
+    if (contract.conId) {
+      const cache = this.contractDetailsCache.get(contract.conId);
+      if (cache) {
+        return cache;
+      }
+    }
+
+    const details = await lastValueFrom(
+      this.api?.getContractDetails(contract),
+      {
+        defaultValue: {all: []} as IB.ContractDetailsUpdate,
+      },
+    );
+
+    if (contract.conId && details.all.length) {
+      this.contractDetailsCache.set(contract.conId, details.all);
+    }
+
+    return details.all;
+  }
+
   /** Observe the account summaries. */
   get accountSummaries(): Observable<AccountSummary[]> {
     return new Observable<AccountSummary[]>(res => {
@@ -312,24 +337,6 @@ export class IBApiService {
         cancel.complete();
       };
     });
-  }
-
-  /** Get the contract details for a given conid */
-  async getContractDetails(conId: number): Promise<IB.ContractDetails[]> {
-    const cache = this.contractDetailsCache.get(conId);
-    if (cache) {
-      return cache;
-    }
-
-    const details = await lastValueFrom(this.api?.getContractDetails({conId}), {
-      defaultValue: {all: []} as IB.ContractDetailsUpdate,
-    });
-
-    if (details.all.length) {
-      this.contractDetailsCache.set(conId, details.all);
-    }
-
-    return details.all;
   }
 
   /** Get market data updates for the given conId.

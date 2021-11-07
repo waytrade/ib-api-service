@@ -6,7 +6,7 @@ import {
   IBApiNextCreationOptions,
   Logger,
 } from "@stoqey/ib";
-import {BehaviorSubject, Observable} from "rxjs";
+import {BehaviorSubject, Observable, Subject} from "rxjs";
 
 /**
  * Mock implementation for @stoqey/ib's IBApiNext that will
@@ -44,8 +44,11 @@ export class IBApiNextMock {
   }
 
   readonly contractDb = new Map<number, ContractDetails>();
+  readonly getContractDetailsCalled = new Subject<Contract>();
+
   getContractDetails(contract: Contract): Observable<ContractDetailsUpdate> {
     return new Observable<ContractDetailsUpdate>(sub => {
+      this.getContractDetailsCalled.next(contract);
       const details = this.contractDb.get(contract.conId ?? 0);
       const update: ContractDetailsUpdate = {
         all: [],

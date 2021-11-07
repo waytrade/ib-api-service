@@ -10,6 +10,10 @@ export class IBApiApp extends App.IBApiApp {
 
   readonly appStopped = new Subject<void>();
 
+  get ibApiMock(): IBApiNextMock {
+    return <IBApiNextMock>(<unknown>this.ibApi);
+  }
+
   /** Stop the app. */
   stop(): void {
     super.stop();

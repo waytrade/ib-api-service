@@ -7,45 +7,46 @@ import {
   HttpStatus,
   inject,
   MicroserviceRequest,
+  post,
   queryParameter,
+  requestBody,
   response,
   responseBody,
   summary,
 } from "@waytrade/microservice-core";
-import {IBApiApp} from "../app";
 import {ContractDetailsList} from "../models/contract-details.model";
+import {Contract} from "../models/contract.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
-/**
- * Event types.
- *
- * Adapt IBApiEventTypeSources and description of
- * IBApiController.createEventStream if you changed it!!
- */
-export enum IBApiEventType {
-  /** Accounts summaries update. */
-  AccountSummaries = "accountSummaries",
-
-  /** Account positions update. */
-  Positions = "positions",
-
-  /** Market data update. */
-  MarketData = "marketData",
-}
-
-/** The Contracts Dataase controller. */
-@controller("Contracts Dataase", "/contracts")
+/** The Contracts Database controller. */
+@controller("Contracts Database", "/contracts")
 export class BrokerApiController {
-  @inject("IBApiApp")
-  private app!: IBApiApp;
-
   @inject("IBApiService")
   private apiService!: IBApiService;
 
   //
   // REST functions
   //
+
+  @post("/search")
+  @summary("Search contract details.")
+  @description("Search for contract details that match the given criteria")
+  @requestBody(Contract)
+  @responseBody(ContractDetailsList)
+  async searchContract(
+    req: MicroserviceRequest,
+    params: Contract,
+  ): Promise<ContractDetailsList> {
+    SecurityUtils.ensureAuthorization(req);
+
+    // get contract details
+
+    const details = await this.apiService.getContractDetails(params);
+    return {
+      details,
+    } as ContractDetailsList;
+  }
 
   @get("/details")
   @summary("Get contract details.")
@@ -61,7 +62,7 @@ export class BrokerApiController {
   ): Promise<ContractDetailsList> {
     SecurityUtils.ensureAuthorization(req);
 
-    // verify state and arguments
+    // verify arguments
 
     const conId = Number(req.queryParams.conId);
     if (conId === undefined || isNaN(conId)) {
@@ -71,9 +72,11 @@ export class BrokerApiController {
       );
     }
 
-    // request contract details
+    // get contract details
 
-    const details = await this.apiService.getContractDetails(Number(conId));
+    const details = await this.apiService.getContractDetails({
+      conId,
+    });
 
     return {
       details,
