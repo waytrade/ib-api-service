@@ -13,7 +13,7 @@ import {
   summary,
 } from "@waytrade/microservice-core";
 import {IBApiApp} from "../app";
-import {ContractDetails} from "../models/contract-details.model";
+import {ContractDetailsList} from "../models/contract-details.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
@@ -34,11 +34,9 @@ export enum IBApiEventType {
   MarketData = "marketData",
 }
 
-/**
- * The IBApi endpoint + controller.
- */
-@controller("IB Api Endpoint", "/")
-export class IBApiController {
+/** The Brokers API controller. */
+@controller("Broker API", "/api")
+export class BrokerApiController {
   @inject("IBApiApp")
   private app!: IBApiApp;
 
@@ -49,38 +47,37 @@ export class IBApiController {
   // REST functions
   //
 
-  @get("contractDetails")
+  @get("/contractDetails")
   @summary("Get contract details.")
-  @description("Get contract details of the contract id.")
-  @queryParameter("conId", Number, true, "The IB contract id.")
+  @description("Get the contract details of a given contract ID.")
+  @queryParameter("conId", Number, true, "The IB contract ID.")
   @response(HttpStatus.BAD_REQUEST)
-  @response(HttpStatus.NOT_FOUND)
+  @response(HttpStatus.NOT_FOUND, "Contract not found.")
   @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
-  @response(HttpStatus.FORBIDDEN, "Unauthorized: wrong username or password.")
-  @responseBody(ContractDetails)
+  @responseBody(ContractDetailsList)
   @bearerAuth([])
-  async getContractDetails(req: MicroserviceRequest): Promise<ContractDetails> {
+  async getContractDetails(
+    req: MicroserviceRequest,
+  ): Promise<ContractDetailsList> {
     SecurityUtils.ensureAuthorization(req);
 
     // verify state and arguments
 
     const conId = Number(req.queryParams.conId);
     if (conId === undefined || isNaN(conId)) {
-      throw new HttpError(HttpStatus.BAD_REQUEST);
+      throw new HttpError(
+        HttpStatus.BAD_REQUEST,
+        "Missing conId parameter on query",
+      );
     }
 
     // request contract details
 
-    return new Promise<ContractDetails>((resolve, reject) => {
-      this.apiService
-        .getContractDetails(Number(conId))
-        .then(result => resolve(result))
-        .catch(err => {
-          const msg = `getContractDetails(): ${err.code} - ${err.error.message}`;
-          this.app.error(msg);
-          reject(new HttpError(HttpStatus.NOT_FOUND, msg));
-        });
-    });
+    const details = await this.apiService.getContractDetails(Number(conId));
+
+    return {
+      details,
+    } as ContractDetailsList;
   }
 
   //

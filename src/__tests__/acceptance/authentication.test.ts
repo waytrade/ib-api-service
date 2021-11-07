@@ -8,7 +8,9 @@ import {IBApiApp} from "../ib-api-test-app";
 describe("Test User Authentication", () => {
   const TEST_USERNAME = "User" + Math.random();
   const TEST_PASSWORD = "Password" + Math.random();
+
   const app = new IBApiApp();
+
   beforeAll(async () => {
     await app.start({
       SERVER_PORT: undefined,

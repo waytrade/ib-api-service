@@ -1,5 +1,5 @@
 import * as IB from "@stoqey/ib";
-import {model, property} from "@waytrade/microservice-core";
+import {arrayProperty, model, property} from "@waytrade/microservice-core";
 import {Contract} from "./contract.model";
 
 /**
@@ -113,4 +113,13 @@ export class ContractDetails {
   /** Stock type.  */
   @property("Stock type.")
   stockType?: string;
+}
+
+/**
+ * A list of contract details.
+ */
+@model("A list of contract details.")
+export class ContractDetailsList {
+  @arrayProperty(ContractDetails, "Array of contract details")
+  details?: ContractDetails[];
 }

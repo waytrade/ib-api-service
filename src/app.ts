@@ -4,7 +4,9 @@ import path from "path";
 import {Subscription} from "rxjs";
 import {IBApiServiceConfig} from "./config";
 import {AuthenticatonController} from "./controllers/authentication.controller";
+import {BrokerApiController} from "./controllers/broker-api.controller";
 import {AuthenticationService} from "./services/authentication.service";
+import {IBApiService} from "./services/ib-api.service";
 import {IBApiLoggerProxy} from "./utils/ib-api-logger-proxy";
 
 /**
@@ -13,8 +15,8 @@ import {IBApiLoggerProxy} from "./utils/ib-api-logger-proxy";
 export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
   constructor(private IBApiNextConstructable: unknown = IB.IBApiNext) {
     super(path.resolve(__dirname, ".."), {
-      apiControllers: [AuthenticatonController /*, IBApiController*/],
-      services: [AuthenticationService /*, IBApiService*/],
+      apiControllers: [AuthenticatonController, BrokerApiController],
+      services: [AuthenticationService, IBApiService],
     });
   }
 

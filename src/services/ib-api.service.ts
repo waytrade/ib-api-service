@@ -1,10 +1,8 @@
 import * as IB from "@stoqey/ib";
-import {DiffTools, inject, MapExt, service} from "@waytrade/microservice-core";
+import {inject, MapExt, service} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {
-  auditTime,
-  firstValueFrom,
-  map,
+  lastValueFrom,
   Observable,
   Subject,
   Subscription,
@@ -12,7 +10,6 @@ import {
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
-import {MarketData, MarketDataUpdate} from "../models/market-data.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
 
@@ -53,7 +50,7 @@ export class IBApiService {
   /** Cache of a requested contract details, with conId as key. */
   private readonly contractDetailsCache = new LruCache<
     number,
-    IB.ContractDetails
+    IB.ContractDetails[]
   >({
     max: 128,
   });
@@ -320,24 +317,25 @@ export class IBApiService {
     });
   }
 
-  /** Get the contract details for a ficen conid */
-  getContractDetails(conId: number): Promise<IB.ContractDetails> {
-    const details = this.contractDetailsCache.get(conId);
-    if (details) {
-      return new Promise<IB.ContractDetails>(resolve => resolve(details));
+  /** Get the contract details for a given conid */
+  async getContractDetails(conId: number): Promise<IB.ContractDetails[]> {
+    const cache = this.contractDetailsCache.get(conId);
+    if (cache) {
+      return cache;
     }
 
-    return firstValueFrom(
-      this.api?.getContractDetails({conId}).pipe(
-        map((v: IB.ContractDetailsUpdate) => {
-          this.contractDetailsCache.set(conId, v.all[0]);
-          return v.all[0];
-        }),
-      ),
-    );
+    const details = await lastValueFrom(this.api?.getContractDetails({conId}), {
+      defaultValue: {all: []} as IB.ContractDetailsUpdate,
+    });
+
+    if (details.all.length) {
+      this.contractDetailsCache.set(conId, details.all);
+    }
+
+    return details.all;
   }
 
-  /** Get market data updates for the given conId.  */
+  /** Get market data updates for the given conId.
   getMarketData(conId: number): Observable<MarketDataUpdate> {
     return new Observable<MarketDataUpdate>(subscriber => {
       const cancel = new Subject();
@@ -407,5 +405,5 @@ export class IBApiService {
         }
       };
     });
-  }
+  }*/
 }
