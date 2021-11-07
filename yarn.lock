@@ -1747,10 +1747,10 @@
     "@typescript-eslint/types" "5.3.0"
     eslint-visitor-keys "^3.0.0"
 
-"@waytrade/microservice-core@^0.9.77":
-  version "0.9.77"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.77/c297b845e3c3df5a1823d05ec7d7a3b262e7a8cc3be1933d8e2ec023da35add6#f652a9015792ef652c80f15bbda50a23a9f99b7c"
-  integrity sha512-2szaKglyo/ogHu05BEt3wlXN+kjeLR3/Ajopgw3PUxHtpIaK4d0CeH6NzaMMdbIjD12FjLj13o2MoLcf6/NVuA==
+"@waytrade/microservice-core@^0.9.78":
+  version "0.9.78"
+  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.78/be49879e0d353409b82edda7380d89d1193f646890391dcb0d74233ea4ee67bd#6ee39d7141316aa63baadd2e70060ce666514099"
+  integrity sha512-lGrDLzCHXBeYz5QtEWgM8FdTNV1ZpS4ZQyOWuF4tiNE0CJn1hH+aILB4HYKmU3LBvic8N8OVDHwjc0GWW00gWQ==
   dependencies:
     axios "^0.21.1"
     dotenv "^10.0.0"
@@ -5238,7 +5238,7 @@ typescript@~4.3.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
   integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
 
-uWebSockets.js@uNetworking/uWebSockets.js#v19.3.0:
+"uWebSockets.js@github:uNetworking/uWebSockets.js#v19.3.0":
   version "19.3.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/7bf0faac5859fef2d113e83d22803f7833774c11"
 

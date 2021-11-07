@@ -36,14 +36,14 @@
     "node": ">=14.15.4"
   },
   "dependencies": {
-    "@types/ws": "^8.2.0",
     "@stoqey/ib": "^1.2.14",
     "@types/bcrypt": "^5.0.0",
     "@types/cookie": "^0.4.1",
     "@types/jsonwebtoken": "^8.5.5",
     "@types/lru-cache": "^5.1.0",
     "@types/pino": "^6.3.12",
-    "@waytrade/microservice-core": "^0.9.77",
+    "@types/ws": "^8.2.0",
+    "@waytrade/microservice-core": "^0.9.78",
     "cookie": "^0.4.1",
     "jsonwebtoken": "^8.5.1",
     "lru-cache": "^6.0.0",
