@@ -19,9 +19,9 @@ import {Contract} from "../models/contract.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
-/** The Contracts Database controller. */
-@controller("Contracts Database", "/contracts")
-export class BrokerApiController {
+/** The contracts database controller. */
+@controller("Contracts", "/contracts")
+export class ContractsController {
   @inject("IBApiService")
   private apiService!: IBApiService;
 
