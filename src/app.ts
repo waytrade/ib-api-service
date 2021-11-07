@@ -3,6 +3,7 @@ import {MicroserviceApp} from "@waytrade/microservice-core";
 import path from "path";
 import {Subscription} from "rxjs";
 import {IBApiServiceConfig} from "./config";
+import {AccountController} from "./controllers/account.controller";
 import {AuthenticatonController} from "./controllers/authentication.controller";
 import {ContractsController} from "./controllers/contracts.controller";
 import {AuthenticationService} from "./services/authentication.service";
@@ -15,7 +16,11 @@ import {IBApiLoggerProxy} from "./utils/ib-api-logger-proxy";
 export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
   constructor(private IBApiNextConstructable: unknown = IB.IBApiNext) {
     super(path.resolve(__dirname, ".."), {
-      apiControllers: [AuthenticatonController, ContractsController],
+      apiControllers: [
+        AuthenticatonController,
+        ContractsController,
+        AccountController,
+      ],
       services: [AuthenticationService, IBApiService],
     });
   }

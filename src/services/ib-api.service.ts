@@ -10,6 +10,7 @@ import {
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
+import {PnL} from "../models/pnl.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
 
@@ -80,6 +81,74 @@ export class IBApiService {
     }
 
     return details.all;
+  }
+
+  /** Get the accounts to which the logged user has access to. */
+  getManagedAccounts(): Promise<string[]> {
+    return this.api.getManagedAccounts();
+  }
+
+  /** Get real time daily PnL and unrealized PnL updates. */
+  getPnL(account: string): Observable<PnL> {
+    return this.api.getPnL(account) as Observable<PnL>;
+  }
+
+  getAccountSummary(account?: string): Observable<AccountSummary> {
+    return new Observable<AccountSummary>(res => {
+      account = account ?? "All";
+
+      let tags = "";
+      ACCOUNT_SUMMARY_TAGS.forEach(tag => {
+        tags = tags + tag + ",";
+      });
+      tags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
+
+      let firstEvent = true;
+
+      const sub$ = this.api.getAccountSummary(account, tags).subscribe({
+        error: (error: IB.IBApiNextError) => {
+          this.app.error("IBApiNext.getAccountSummary: " + error.error.message);
+        },
+        next: update => {
+          // collect updated
+
+          const updated = new Map([
+            ...(update.changed?.entries() ?? []),
+            ...(update.added?.entries() ?? []),
+          ]);
+
+          const changed = new MapExt<string, AccountSummary>();
+          updated.forEach((tagValues, accountId) => {
+            Helper.colllectAccountSummaryTagValues(
+              accountId,
+              tagValues,
+              this.app.config.BASE_CURRENCY ?? "",
+              changed,
+            );
+          });
+
+          // add baseCurrency to first event
+
+          const changedArray = Array.from(changed.values());
+          if (firstEvent) {
+            changedArray.forEach(
+              v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
+            );
+            firstEvent = false;
+          }
+
+          // emit update event
+
+          if (changedArray.length) {
+            res.next(changedArray[0]);
+          }
+        },
+      });
+
+      return (): void => {
+        sub$.unsubscribe();
+      };
+    });
   }
 
   /** Observe the account summaries. */
@@ -168,6 +237,9 @@ export class IBApiService {
                   },
                 });
             });
+          },
+          complete: () => {
+            res.complete();
           },
         });
 

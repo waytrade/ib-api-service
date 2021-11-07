@@ -4,8 +4,7 @@ import axios from "axios";
 import {ContractDetailsList} from "../../models/contract-details.model";
 import {IBApiApp} from "../ib-api-test-app";
 
-/** Test Broker API. */
-describe("Test Broker API", () => {
+describe("Test Contracts Controller", () => {
   const TEST_USERNAME = "User" + Math.random();
   const TEST_PASSWORD = "Password" + Math.random();
 

@@ -5,6 +5,7 @@ import {
   ContractDetailsUpdate,
   IBApiNextCreationOptions,
   Logger,
+  PnL,
 } from "@stoqey/ib";
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 
@@ -59,6 +60,22 @@ export class IBApiNextMock {
       }
       sub.next(update);
       sub.complete();
+    });
+  }
+
+  readonly managedAccounts = new Set<string>();
+
+  async getManagedAccounts(): Promise<string[]> {
+    return Array.from(this.managedAccounts);
+  }
+
+  readonly currentPnL = new BehaviorSubject<PnL>({});
+
+  getPnL(account: string, model?: string): Observable<PnL> {
+    return new Observable<PnL>(res => {
+      this.currentPnL.subscribe({
+        next: v => res.next(v),
+      });
     });
   }
 }
