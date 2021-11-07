@@ -13,9 +13,6 @@ import {AccountSummary} from "../models/account-summary.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
 
-/** Debounce time on market data ticks. */
-const MARKET_DATA_TICK_DEBOUNCE_TIME_MS = 10;
-
 /**
  * Account summary tag values, make suer this is in sync with
  * AccountSummary model.

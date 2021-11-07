@@ -23,7 +23,7 @@ export class IBApiEvent {
   /** Update on inventorty positions. */
   @property(
     "An update on the inventory positions.</br>" +
-      "Send 'sub:positions' on event stream to subscribe." +
+      "Send 'sub:positions' on event stream to subscribe.</br>" +
       "Send 'unsub:positions' on event stream to unsubscribe.",
   )
   positions?: PositionsUpdate;

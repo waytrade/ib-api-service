@@ -51,7 +51,7 @@ export class SecurityUtils {
       );
     }
 
-    if (!bearerToken || !bearerToken.startsWith("Bearer ")) {
+    if (!bearerToken.startsWith("Bearer ")) {
       throw new HttpError(
         HttpStatus.UNAUTHORIZED,
         "Invalid authorization header value (must be a Bearer token)",
