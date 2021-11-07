@@ -5238,7 +5238,7 @@ typescript@~4.3.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
   integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
 
-"uWebSockets.js@github:uNetworking/uWebSockets.js#v19.3.0":
+uWebSockets.js@uNetworking/uWebSockets.js#v19.3.0:
   version "19.3.0"
   resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/7bf0faac5859fef2d113e83d22803f7833774c11"
 
