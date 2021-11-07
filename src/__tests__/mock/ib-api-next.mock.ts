@@ -8,6 +8,13 @@ import {
 } from "@stoqey/ib";
 import {BehaviorSubject, Observable} from "rxjs";
 
+/**
+ * Mock implementation for @stoqey/ib's IBApiNext that will
+ * return pre-configurd values.
+ *
+ * It is used by testing code to avoid the need of having a read IB account
+ * and connection TWS for running the test codes.
+ */
 export class IBApiNextMock {
   constructor(private options?: IBApiNextCreationOptions) {}
 
@@ -24,34 +31,19 @@ export class IBApiNextMock {
   }
 
   connect(clientId?: number): IBApiNextMock {
-    this.options?.logger?.debug(
-      "IBApiMock",
-      "changed ConnectionState to Connecting.",
-    );
     this._connectionState.next(ConnectionState.Connecting);
-
-    this.options?.logger?.info(
-      "IBApiMock",
-      "changed ConnectionState to Connected.",
-    );
     this._connectionState.next(ConnectionState.Connected);
-
     return this;
   }
 
   disconnect(): IBApiNextMock {
     if (this._connectionState.value !== ConnectionState.Disconnected) {
-      this.options?.logger?.info(
-        "IBApiMock",
-        "changed ConnectionState to Disconnected.",
-      );
       this._connectionState.next(ConnectionState.Disconnected);
     }
     return this;
   }
 
   readonly contractDb = new Map<number, ContractDetails>();
-
   getContractDetails(contract: Contract): Observable<ContractDetailsUpdate> {
     return new Observable<ContractDetailsUpdate>(sub => {
       const details = this.contractDb.get(contract.conId ?? 0);
