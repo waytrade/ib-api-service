@@ -24,7 +24,7 @@ Running the server:
 
 Building a client:
 
-The ib-api-service interface is completely described by via [OpenAPI](https://swagger.io/specification/). It provides a SwaggerUI at '/' and a openapi.json on `/openapi.json` or from [Packages](https://github.com/waytrade/ib-api-service/packages/770607):
+The ib-api-service interface is completely described via [OpenAPI](https://swagger.io/specification/). It provides a SwaggerUI at '/' and a openapi.json on `/openapi.json` or from [Packages](https://github.com/waytrade/ib-api-service/packages/770607):
 
     yarn add @waytrade/ib-api-service
 
