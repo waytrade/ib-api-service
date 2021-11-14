@@ -6,7 +6,7 @@
 [![Test Report](https://raw.githubusercontent.com/waytrade/microservice-core/master/assets/test-results.svg)](https://waytrade.github.io/ib-api-service/jest/)
 [![Core Coverage](https://raw.githubusercontent.com/waytrade/ib-api-service/gh-pages/coverage/coverage.svg)](https://waytrade.github.io/ib-api-service/coverage/lcov-report)
 
-A REST/Websocket API (with OpenAPI & SwaggerUI) Server on top of https://github.com/stoqey/ib.
+A REST/Websocket API Server (with OpenAPI & SwaggerUI) on top of [@stoqey/ib](https://github.com/stoqey/ib) IBApiNext.
 
 ---
 
