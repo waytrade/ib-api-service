@@ -6,7 +6,7 @@
 [![Test Report](https://raw.githubusercontent.com/waytrade/microservice-core/master/assets/test-results.svg)](https://waytrade.github.io/ib-api-service/jest/)
 [![Core Coverage](https://raw.githubusercontent.com/waytrade/ib-api-service/gh-pages/coverage/coverage.svg)](https://waytrade.github.io/ib-api-service/coverage/lcov-report)
 
-This App implements a REST API (with OpenAPI spec and SwaggerUI) + a Websocket Server on top of https://github.com/stoqey/ib.
+A REST/Websocket API Server (with OpenAPI & SwaggerUI) on top of [@stoqey/ib](https://github.com/stoqey/ib) IBApiNext.
 
 ---
 
@@ -14,85 +14,21 @@ We use this app as part of our microservice ecosystem and it is OSS so you don't
 
 ---
 
-## How run the standalone docker container
+## How to use
 
-Create an .env file on root folder with:
+Running the server:
 
-- TWS_USERID (your TWS user id)
-- TWS_PASSWORD (your TWS password)
-- TRADING_MODE ('paper' or 'live')
+- [by using the prebuilt docker image](doc/run_docker.md) (for quick-start)
+- [by building the docker image](doc/build_docker.md) (if you want to build/host your own image)
+- [by building App and running it on debugger](debug_app.md) (if you want develop on the App)
 
-Run:
+Building a client:
 
-    $ docker-compose up --build
+The ib-api-service interface is completely described by via [OpenAPI](https://swagger.io/specification/). It provides a SwaggerUI at '/' and a openapi.json on `/openapi.json` or from [Packages](https://github.com/waytrade/ib-api-service/packages/770607):
 
-Open http://localhost:3000 to browse the SwaggerUI learn about the API.
+    yarn add @waytrade/ib-api-service
 
-## How to use it on your docker-compose.yml:
+After getting the openapi.json, use your favorite openapi-generator to generate code binding for your client application.\
+Example: to create bindings for Typescript language, using [axios](https://github.com/axios/axios) framework, run:
 
-```
-ib-api-service:
-  image: ghcr.io/waytrade/ib-api-service/production:latest
-  restart: always
-  environment:
-    SERVER_PORT: 3000
-    IB_GATEWAY_PORT: 4002
-    IB_GATEWAY_HOST: ib-gateway
-  ports:
-    - 3000:3000
-```
-
-See [ib-gateway-docker](https://github.com/waytrade/ib-gateway-docker) for
-an Interactive Brokers Gateway on docker.
-
----
-
-## How to build a client
-
-### Get openapi.json from server
-
-Run the standalone docker and download http://localhost:3000/openapi.json
-
-or
-
-Install the '@waytrade/ib-api-service' package:
-
-    $ yarn add @waytrade/ib-api-service
-
-_Note that all @waytrade packages are hosted on **github not on npmjs**._
-You will need a .npmrc file on your root folder, containing the following lines at least:
-
-```
-@waytrade:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=<your_github_auth_token>
-```
-
-### Generate the client code
-
-Generate the client code bindings for your favorite language from the openapi.json, like:
-
-    $ openapi-generator-cli generate -i ./node_modules/@waytrade/ib-api-service/openapi.json -g typescript-axios -o ./src/apis/ib-api-service
-
----
-
-## How to develop
-
-### Preparation
-
-    $ yarn global add @openapitools/openapi-generator-cli
-
-### Build and debug
-
-    $ yarn install
-    $ code .
-
-Press Shit+Ctrl+B to start compilation in watch mode.\
-Press F5 to start the App on debugger.
-
-### Prepare for push
-
-After the work is finished and you want push: lint, test and validate OpenAPI:
-
-    $ yarn release
-
-only push changes if all tests pass with 0 warning and errors.
+    openapi-generator-cli generate -i ./node_modules/@waytrade/ib-api-service/openapi.json -g typescript-axios -o ./src/apis/ib-api-service

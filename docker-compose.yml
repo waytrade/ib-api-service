@@ -7,8 +7,8 @@ services:
       dockerfile: ./Dockerfile
     environment:
       SERVER_PORT: 3000
-      REST_API_USERNAME: ${TWS_USERID}
-      REST_API_PASSWORD: ${TWS_PASSWORD}
+      REST_API_USERNAME: ${REST_API_USERNAME}
+      REST_API_PASSWORD: ${REST_API_PASSWORD}
       TWS_USERID: ${TWS_USERID}
       TWS_PASSWORD: ${TWS_PASSWORD}
       TRADING_MODE: ${TRADING_MODE:-live}
