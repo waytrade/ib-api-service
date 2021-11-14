@@ -20,7 +20,7 @@ Running the server:
 
 - [by using the prebuilt docker image](doc/run_docker.md) (for quick-start)
 - [by building the docker image](doc/build_docker.md) (if you want to build/host your own image)
-- [by building App and running it on debugger](debug_app.md) (if you want develop on the App)
+- [by building App and running it on debugger](doc/debug_app.md) (if you want develop on the App)
 
 Building a client:
 
