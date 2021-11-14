@@ -1,4 +1,3 @@
-import * as IB from "@stoqey/ib";
 import {arrayProperty, model, property} from "@waytrade/microservice-core";
 import {Contract} from "./contract.model";
 
@@ -7,10 +6,6 @@ import {Contract} from "./contract.model";
  */
 @model("Details of a contract on Interactive Brokers.")
 export class ContractDetails {
-  constructor(contract: IB.ContractDetails) {
-    Object.assign(this, contract);
-  }
-
   /** A fully-defined Contract object. */
   @property("A fully-defined Contract object.")
   contract?: Contract;

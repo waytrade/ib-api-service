@@ -1,11 +1,14 @@
 import {
   AccountPositionsUpdate,
+  AccountSummariesUpdate,
   ConnectionState,
   Contract,
   ContractDetails,
   ContractDetailsUpdate,
   IBApiNextCreationOptions,
   Logger,
+  MarketDataType,
+  MarketDataUpdate,
   PnL,
   PnLSingle,
 } from "@stoqey/ib";
@@ -71,6 +74,15 @@ export class IBApiNextMock {
     return Array.from(this.managedAccounts);
   }
 
+  readonly accountSummaryUpdate = new ReplaySubject<AccountSummariesUpdate>(1);
+
+  getAccountSummary(
+    group: string,
+    tags: string,
+  ): Observable<AccountSummariesUpdate> {
+    return this.accountSummaryUpdate;
+  }
+
   readonly currentPnL = new BehaviorSubject<PnL>({});
 
   getPnL(account: string, model?: string): Observable<PnL> {
@@ -97,5 +109,22 @@ export class IBApiNextMock {
     conId: number,
   ): Observable<PnLSingle> {
     return this.currentPnLSingle;
+  }
+
+  readonly setMarketDataTypeCalled = new ReplaySubject<MarketDataType>(1);
+
+  setMarketDataType(type: MarketDataType): void {
+    this.setMarketDataTypeCalled.next(type);
+  }
+
+  readonly marketDataUpdate = new ReplaySubject<MarketDataUpdate>(1);
+
+  getMarketData(
+    contract: Contract,
+    genericTickList: string,
+    snapshot: boolean,
+    regulatorySnapshot: boolean,
+  ): Observable<MarketDataUpdate> {
+    return this.marketDataUpdate;
   }
 }

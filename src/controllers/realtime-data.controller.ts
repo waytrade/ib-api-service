@@ -15,10 +15,23 @@ import {
   WaytradeEventMessage,
   WaytradeEventMessageType,
 } from "@waytrade/microservice-core/dist/vendor/waytrade";
-import {firstValueFrom, Subject} from "rxjs";
+import {WaytradeErrorEvent} from "@waytrade/microservice-core/dist/vendor/waytrade/models/waytrade-event-stream.model";
+import {firstValueFrom, Subject, Subscription} from "rxjs";
 import {RealtimeDataMessage} from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
+
+/** Send an error to the stream */
+function sendError(
+  stream: MicroserviceStream,
+  error: WaytradeErrorEvent,
+): void {
+  stream.send(
+    JSON.stringify({
+      error,
+    } as WaytradeEventMessage),
+  );
+}
 
 /** The Real-time Data controller. */
 @controller("Real-time Data", "/realtime")
@@ -43,6 +56,7 @@ export class RealtimeDataController {
       "</br>Avaiable message topics:</br><ul>" +
       "<li>accountSummaries</li>" +
       "<li>positions</li>" +
+      "<li>marketdata/&lt;conId&gt;</li>" +
       "</ul>",
   )
   @queryParameter("auth", String, false, "The authorization token.")
@@ -62,14 +76,10 @@ export class RealtimeDataController {
     }
 
     if (!requestHeader.has("authorization")) {
-      stream.send(
-        JSON.stringify({
-          error: {
-            code: HttpStatus.UNAUTHORIZED,
-            desc: "Authorization header or auth argument missing",
-          },
-        } as WaytradeEventMessage),
-      );
+      sendError(stream, {
+        code: HttpStatus.UNAUTHORIZED,
+        desc: "Authorization header or auth argument missing",
+      });
       stream.close();
       return;
     }
@@ -79,14 +89,10 @@ export class RealtimeDataController {
         headers: requestHeader,
       } as MicroserviceRequest);
     } catch (e) {
-      stream.send(
-        JSON.stringify({
-          error: {
-            code: HttpStatus.UNAUTHORIZED,
-            desc: "Not authorized",
-          },
-        } as WaytradeEventMessage),
-      );
+      sendError(stream, {
+        code: HttpStatus.UNAUTHORIZED,
+        desc: "Not authorized",
+      });
       stream.close();
       return;
     }
@@ -100,14 +106,10 @@ export class RealtimeDataController {
       try {
         msg = JSON.parse(data) as WaytradeEventMessage;
       } catch (e) {
-        stream.send(
-          JSON.stringify({
-            error: {
-              code: HttpStatus.BAD_REQUEST,
-              desc: (e as Error).message,
-            },
-          } as WaytradeEventMessage),
-        );
+        sendError(stream, {
+          code: HttpStatus.BAD_REQUEST,
+          desc: (e as Error).message,
+        });
         return;
       }
 
@@ -131,6 +133,11 @@ export class RealtimeDataController {
 
         subscriptionCancelSignals.get(msg.topic)?.next();
         subscriptionCancelSignals.delete(msg.topic);
+      } else {
+        sendError(stream, {
+          code: HttpStatus.BAD_REQUEST,
+          desc: `Invalid message type: ${msg.type}`,
+        });
       }
     };
 
@@ -146,8 +153,9 @@ export class RealtimeDataController {
     stream: MicroserviceStream,
     cancel: Subject<void>,
   ): void {
+    let sub$: Subscription | undefined = undefined;
     if (topic === "accountSummaries") {
-      const sub$ = this.apiService.accountSummaries.subscribe({
+      sub$ = this.apiService.accountSummaries.subscribe({
         next: update => {
           const msg: RealtimeDataMessage = {
             topic,
@@ -157,10 +165,15 @@ export class RealtimeDataController {
           };
           stream.send(JSON.stringify(msg));
         },
+        error: err => {
+          sendError(stream, {
+            code: HttpStatus.BAD_REQUEST,
+            desc: `subscribe ${topic}: ${(<Error>err).message}.`,
+          });
+        },
       });
-      firstValueFrom(cancel).then(() => sub$.unsubscribe());
     } else if (topic === "positions") {
-      const sub$ = this.apiService.positions.subscribe({
+      sub$ = this.apiService.positions.subscribe({
         next: update => {
           const msg: RealtimeDataMessage = {
             topic,
@@ -170,8 +183,45 @@ export class RealtimeDataController {
           };
           stream.send(JSON.stringify(msg));
         },
+        error: err => {
+          sendError(stream, {
+            code: HttpStatus.BAD_REQUEST,
+            desc: `subscribe ${topic}: ${(<Error>err).message}.`,
+          });
+        },
       });
-      firstValueFrom(cancel).then(() => sub$.unsubscribe());
+    } else if (topic.startsWith("marketdata/")) {
+      const conId = Number(topic.substr("marketdata/".length));
+      if (isNaN(conId)) {
+        sendError(stream, {
+          code: HttpStatus.BAD_REQUEST,
+          desc: `subscribe ${topic}: conId is not a number.`,
+        });
+        return;
+      }
+      sub$ = this.apiService.getMarketData(conId).subscribe({
+        next: update => {
+          const msg: RealtimeDataMessage = {
+            topic,
+            data: {
+              marketdata: update,
+            },
+          };
+          stream.send(JSON.stringify(msg));
+        },
+        error: err => {
+          sendError(stream, {
+            code: HttpStatus.BAD_REQUEST,
+            desc: `subscribe ${topic}: ${(<Error>err).message}`,
+          });
+        },
+      });
+    } else {
+      sendError(stream, {
+        code: HttpStatus.BAD_REQUEST,
+        desc: `subscribe ${topic}: invalid topic.`,
+      });
     }
+    firstValueFrom(cancel).then(() => sub$?.unsubscribe());
   }
 }

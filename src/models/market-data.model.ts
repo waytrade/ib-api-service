@@ -372,17 +372,3 @@ export class MarketData {
   @property("The theta on the pricing-model of an option.")
   MODEL_OPTION_THETA?: number;
 }
-
-/**
- * A market data update on a contract.
- */
-@model("A market data update on a contract.")
-export class MarketDataUpdate {
-  /** The contract id. */
-  @property("The contract id.")
-  conId?: number;
-
-  /** The market data. */
-  @property("The market data.")
-  data?: MarketData;
-}

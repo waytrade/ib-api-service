@@ -1,7 +1,14 @@
 import * as IB from "@stoqey/ib";
-import {inject, MapExt, service} from "@waytrade/microservice-core";
+import {
+  DiffTools,
+  inject,
+  MapExt,
+  service,
+  subscribeUntil,
+} from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {
+  firstValueFrom,
   lastValueFrom,
   Observable,
   Subject,
@@ -10,9 +17,17 @@ import {
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
+import {MarketData} from "../models/market-data.model";
 import {PnL} from "../models/pnl.model";
 import {Position, PositionsUpdate} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
+
+/**
+ * Send interval on market data ticks in milliseconds.
+ * TWS sends market data value changes one-by-one which can cause a lot of
+ * overhead donwstream. Use this setting to reduce update frequency.
+ */
+const MARKET_DATA_SEND_INTERVAL_MS = 10;
 
 /**
  * Account summary tag values, make suer this is in sync with
@@ -121,87 +136,83 @@ export class IBApiService {
       });
       tags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
 
-      const cancel = new Subject();
+      const cancel = new Subject<boolean>();
       const subscribedPnlAccounts = new Set<string>();
 
       let firstEvent = true;
 
-      this.api
-        ?.getAccountSummary("All", tags)
-        .pipe(takeUntil(cancel))
-        .subscribe({
-          error: (error: IB.IBApiNextError) => {
-            this.app.error(
-              "IBApiNext.getAccountSummary: " + error.error.message,
+      subscribeUntil(cancel, this.api.getAccountSummary("All", tags), {
+        error: (error: IB.IBApiNextError) => {
+          this.app.error("getAccountSummary: " + error.error.message);
+        },
+        next: update => {
+          // collect updated
+
+          const updated = new Map([
+            ...(update.changed?.entries() ?? []),
+            ...(update.added?.entries() ?? []),
+          ]);
+
+          const changed = new MapExt<string, AccountSummary>();
+          updated.forEach((tagValues, accountId) => {
+            Helper.colllectAccountSummaryTagValues(
+              accountId,
+              tagValues,
+              this.app.config.BASE_CURRENCY ?? "",
+              changed,
             );
-          },
-          next: update => {
-            // collect updated
+          });
 
-            const updated = new Map([
-              ...(update.changed?.entries() ?? []),
-              ...(update.added?.entries() ?? []),
-            ]);
+          // add baseCurrency to first event
 
-            const changed = new MapExt<string, AccountSummary>();
-            updated.forEach((tagValues, accountId) => {
-              Helper.colllectAccountSummaryTagValues(
-                accountId,
-                tagValues,
-                this.app.config.BASE_CURRENCY ?? "",
-                changed,
-              );
-            });
+          const changedArray = Array.from(changed.values());
+          if (firstEvent) {
+            changedArray.forEach(
+              v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
+            );
+            firstEvent = false;
+          }
 
-            // add baseCurrency to first event
+          // emit update event
 
-            const changedArray = Array.from(changed.values());
-            if (firstEvent) {
-              changedArray.forEach(
-                v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
-              );
-              firstEvent = false;
+          if (changedArray.length) {
+            res.next(changedArray);
+          }
+
+          // subscribe on account PnLs
+          updated.forEach((_tagValues, accountId) => {
+            if (subscribedPnlAccounts.has(accountId)) {
+              return;
             }
+            subscribedPnlAccounts.add(accountId);
 
-            // emit update event
-
-            if (changedArray.length) {
-              res.next(changedArray);
-            }
-
-            // subscribe on account PnLs
-            updated.forEach((_tagValues, accountId) => {
-              if (subscribedPnlAccounts.has(accountId)) {
-                return;
-              }
-              subscribedPnlAccounts.add(accountId);
-
-              this.api
-                ?.getPnL(accountId)
-                .pipe(takeUntil(cancel))
-                .subscribe({
-                  error: (error: IB.IBApiNextError) => {
-                    this.app.error(
-                      `getPnL(${accountId}): ${error.error.message}`,
-                    );
-                    subscribedPnlAccounts.delete(accountId);
-                  },
-                  next: pnl => {
-                    const changedSummary: AccountSummary = {
-                      account: accountId,
-                      dailyPnL: pnl.dailyPnL,
-                      realizedPnL: pnl.realizedPnL,
-                      unrealizedPnL: pnl.unrealizedPnL,
-                    };
-                    res.next([changedSummary]);
-                  },
-                });
+            subscribeUntil(cancel, this.api.getPnL(accountId), {
+              error: (error: IB.IBApiNextError) => {
+                this.app.error(`getPnL(${accountId}): ${error.error.message}`);
+                subscribedPnlAccounts.delete(accountId);
+              },
+              next: pnl => {
+                if (
+                  pnl.dailyPnL !== undefined ||
+                  pnl.realizedPnL !== undefined ||
+                  pnl.unrealizedPnL !== undefined
+                ) {
+                  const changedSummary: AccountSummary = {
+                    account: accountId,
+                    dailyPnL: pnl.dailyPnL,
+                    realizedPnL: pnl.realizedPnL,
+                    unrealizedPnL: pnl.unrealizedPnL,
+                  };
+                  res.next([changedSummary]);
+                }
+              },
             });
-          },
-          complete: () => {
-            res.complete();
-          },
-        });
+          });
+        },
+        complete: () => {
+          res.complete();
+        },
+      });
 
       return (): void => {
         cancel.next(true);
@@ -392,60 +403,66 @@ export class IBApiService {
     });
   }
 
-  /** Get market data updates for the given conId.
-  getMarketData(conId: number): Observable<MarketDataUpdate> {
-    return new Observable<MarketDataUpdate>(subscriber => {
+  /** Get market data updates for the given conId.*/
+  getMarketData(conId: number): Observable<MarketData> {
+    return new Observable<MarketData>(subscriber => {
       const cancel = new Subject();
-      const sendInterval: NodeJS.Timeout | undefined = undefined;
 
       // lookup contract details from conId
 
-      this.getContractDetails(conId)
+      this.getContractDetails({conId})
         .then(details => {
+          const contract = details.find(
+            v => v.contract.conId === conId,
+          )?.contract;
+          if (!contract) {
+            subscriber.error(new Error("conId not found."));
+            return;
+          }
+
+          const lastSentMarketData: MarketData = {};
+          let currentMarketData: MarketData = {};
+
+          // donwstream send timer
+
+          const sendTimer = setInterval(() => {
+            const changedMarketData = DiffTools.diff(
+              lastSentMarketData,
+              currentMarketData,
+            ).changed;
+
+            if (changedMarketData) {
+              Object.assign(currentMarketData, changedMarketData);
+              Object.assign(lastSentMarketData, currentMarketData);
+              subscriber.next(changedMarketData);
+            }
+          }, MARKET_DATA_SEND_INTERVAL_MS);
+
+          // do not display delayed market data at all:
           this.api.setMarketDataType(IB.MarketDataType.FROZEN);
 
           // subscribe on market data
 
-          const lastMarketData: MarketData = {};
-
-          this.api
-            .getMarketData(
-              details.contract,
-              "104,105,106,165,411",
-              false,
-              false,
-            )
-            .pipe(
-              takeUntil(cancel),
-              auditTime(MARKET_DATA_TICK_DEBOUNCE_TIME_MS),
-            )
-            // eslint-disable-next-line rxjs/no-ignored-subscription
+          const sub$ = this.api
+            .getMarketData(contract, "104,105,106,165,411", false, false)
             .subscribe({
               next: update => {
-                const currentMarketData = Helper.marketDataTicksToModel(
-                  update.all,
-                );
-                const changedMarketData = DiffTools.diff(
-                  lastMarketData,
-                  currentMarketData,
-                ).changed;
-
-                Object.assign(lastMarketData, currentMarketData);
-
-                if (changedMarketData) {
-                  subscriber.next({
-                    conId: details.contract.conId,
-                    data: changedMarketData,
-                  });
-                }
+                currentMarketData = Helper.marketDataTicksToModel(update.all);
               },
               error: (error: IB.IBApiNextError) => {
                 this.app.error(
-                  `getMarketData(${details.contract.symbol}) failed with ${error.error.message}`,
+                  `getMarketData(${conId} / ${contract.symbol}) failed with ${error.error.message}`,
                 );
                 subscriber.error(new Error(error.error.message));
               },
             });
+
+          // handle cancel signal
+
+          firstValueFrom(cancel).then(() => {
+            clearInterval(sendTimer);
+            sub$.unsubscribe();
+          });
         })
         .catch(e => {
           this.app.error(
@@ -457,10 +474,7 @@ export class IBApiService {
       return (): void => {
         cancel.next(true);
         cancel.complete();
-        if (sendInterval) {
-          clearInterval(sendInterval);
-        }
       };
     });
-  }*/
+  }
 }

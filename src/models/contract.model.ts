@@ -1,4 +1,3 @@
-import * as IB from "@stoqey/ib";
 import {OptionType, SecType} from "@stoqey/ib";
 import {enumProperty, model, property} from "@waytrade/microservice-core";
 
@@ -7,10 +6,6 @@ import {enumProperty, model, property} from "@waytrade/microservice-core";
  */
 @model("A contract on Interactive Brokers.")
 export class Contract {
-  constructor(contract: IB.Contract) {
-    Object.assign(this, contract);
-  }
-
   /** The unique IB contract identifier. */
   @property("The unique IB contract identifier.")
   conId?: number;
