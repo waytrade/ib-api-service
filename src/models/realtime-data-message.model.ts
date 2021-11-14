@@ -5,6 +5,7 @@ import {
   property,
 } from "@waytrade/microservice-core";
 import {AccountSummary} from "./account-summary.model";
+import {MarketData} from "./market-data.model";
 import {PositionsUpdate} from "./position.model";
 
 /**
@@ -35,8 +36,11 @@ export class RealtimeDataMessagePayload {
   @arrayProperty(AccountSummary, "Update on the account summaries.")
   accountSummaries?: AccountSummary[];
 
-  @arrayProperty(AccountSummary, "Update on the positions.")
+  @property("Update on the positions.")
   positions?: PositionsUpdate;
+
+  @property("Update on market data.")
+  marketdata?: MarketData;
 }
 
 /** A message on the real-time data stream. */
@@ -61,6 +65,6 @@ export class RealtimeDataMessage {
   topic!: string;
 
   /** The message data payload. */
-  @property("An error event.")
+  @property("The message data payload.")
   data?: RealtimeDataMessagePayload;
 }
