@@ -22,7 +22,7 @@
 
     VNC_SERVER_PASSWORD is optional (if not specified, no VNC server for access to IBGateway UI will be started).
 
-3.  Create a docker-compose.yml, containing:
+3.  Create a docker-compose.yml file:
 
         version: "3.4"
         services:
