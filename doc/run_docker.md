@@ -1,5 +1,11 @@
 # How to run the prebuilt docker image
 
+## Prepare the system
+
+- Install [Docker](https://docs.docker.com/get-docker/)
+
+## Run container
+
 1.  Create a new folder
 
         mkdir ib-api-service

@@ -22,39 +22,13 @@ Running the server:
 - [by building the docker image](doc/build_docker.md) (if you want to build/host your own image)
 - [by building App and running it on debugger](debug_app.md) (if you want develop on the App)
 
-## How to build a client
+Building a client:
 
-The ib-api-service interface is completely described by the openapi.json file.
-
-The openapi.json file can be downloaded from server on `/openapi.json` or from [Packages](https://github.com/waytrade/ib-api-service/packages/770607):
+The ib-api-service interface is completely described by via [OpenAPI](https://swagger.io/specification/). It provides a SwaggerUI at '/' and a openapi.json on `/openapi.json` or from [Packages](https://github.com/waytrade/ib-api-service/packages/770607):
 
     yarn add @waytrade/ib-api-service
 
-After getting the openapi.json, use your favorite openapi-generator to generate code binding for your client.\
-Example, to create bindings for Typescript [axios](https://github.com/axios/axios)with [openapi-generator](https://github.com/OpenAPITools/openapi-generator), run:
+After getting the openapi.json, use your favorite openapi-generator to generate code binding for your client application.\
+Example: to create bindings for Typescript language, using [axios](https://github.com/axios/axios) framework, run:
 
     openapi-generator-cli generate -i ./node_modules/@waytrade/ib-api-service/openapi.json -g typescript-axios -o ./src/apis/ib-api-service
-
----
-
-## How to develop
-
-### Preparation
-
-    $ yarn global add @openapitools/openapi-generator-cli
-
-### Build and debug
-
-    $ yarn install
-    $ code .
-
-Press Shit+Ctrl+B to start compilation in watch mode.\
-Press F5 to start the App on debugger.
-
-### Prepare for push
-
-After the work is finished and you want push: lint, test and validate OpenAPI:
-
-    $ yarn release
-
-only push changes if all tests pass with 0 warning and errors.

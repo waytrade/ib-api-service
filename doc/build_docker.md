@@ -1,5 +1,11 @@
 # How to build the docker image
 
+## Prepare the system
+
+- Install [Docker](https://docs.docker.com/get-docker/)
+
+## Build
+
 1.  Clone this repo
 
         git clone https://github.com/waytrade/ib-api-service.git
