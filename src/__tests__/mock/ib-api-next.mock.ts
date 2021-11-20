@@ -6,6 +6,7 @@ import {
   ContractDetails,
   ContractDetailsUpdate,
   IBApiNextCreationOptions,
+  IBApiNextError,
   Logger,
   MarketDataType,
   MarketDataUpdate,
@@ -51,9 +52,14 @@ export class IBApiNextMock {
 
   readonly contractDb = new Map<number, ContractDetails>();
   readonly getContractDetailsCalled = new Subject<Contract>();
+  getContractDetailsError?: IBApiNextError;
 
   getContractDetails(contract: Contract): Observable<ContractDetailsUpdate> {
     return new Observable<ContractDetailsUpdate>(sub => {
+      if (this.getContractDetailsError) {
+        sub.error(this.getContractDetailsError);
+        return;
+      }
       this.getContractDetailsCalled.next(contract);
       const details = this.contractDb.get(contract.conId ?? 0);
       const update: ContractDetailsUpdate = {
@@ -74,7 +80,7 @@ export class IBApiNextMock {
     return Array.from(this.managedAccounts);
   }
 
-  readonly accountSummaryUpdate = new ReplaySubject<AccountSummariesUpdate>(1);
+  accountSummaryUpdate = new ReplaySubject<AccountSummariesUpdate>(1);
 
   getAccountSummary(
     group: string,
@@ -83,25 +89,24 @@ export class IBApiNextMock {
     return this.accountSummaryUpdate;
   }
 
-  readonly currentPnL = new BehaviorSubject<PnL>({});
+  currentPnL = new BehaviorSubject<PnL>({});
 
   getPnL(account: string, model?: string): Observable<PnL> {
     return new Observable<PnL>(res => {
       this.currentPnL.subscribe({
         next: v => res.next(v),
+        error: err => res.error(err),
       });
     });
   }
 
-  readonly currentPositionsUpdate = new ReplaySubject<AccountPositionsUpdate>(
-    1,
-  );
+  currentPositionsUpdate = new ReplaySubject<AccountPositionsUpdate>(1);
 
   getPositions(): Observable<AccountPositionsUpdate> {
     return this.currentPositionsUpdate;
   }
 
-  readonly currentPnLSingle = new ReplaySubject<PnLSingle>(1);
+  currentPnLSingle = new ReplaySubject<PnLSingle>(1);
 
   getPnLSingle(
     account: string,
@@ -117,7 +122,7 @@ export class IBApiNextMock {
     this.setMarketDataTypeCalled.next(type);
   }
 
-  readonly marketDataUpdate = new ReplaySubject<MarketDataUpdate>(1);
+  marketDataUpdate = new ReplaySubject<MarketDataUpdate>(1);
 
   getMarketData(
     contract: Contract,

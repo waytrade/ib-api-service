@@ -15,21 +15,40 @@ import {
   WaytradeEventMessage,
   WaytradeEventMessageType,
 } from "@waytrade/microservice-core/dist/vendor/waytrade";
-import {WaytradeErrorEvent} from "@waytrade/microservice-core/dist/vendor/waytrade/models/waytrade-event-stream.model";
 import {firstValueFrom, Subject, Subscription} from "rxjs";
-import {RealtimeDataMessage} from "../models/realtime-data-message.model";
+import {
+  RealtimeDataError,
+  RealtimeDataMessage,
+  RealtimeDataMessagePayload,
+} from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
 /** Send an error to the stream */
 function sendError(
   stream: MicroserviceStream,
-  error: WaytradeErrorEvent,
+  topic: string,
+  error: RealtimeDataError,
 ): void {
   stream.send(
     JSON.stringify({
+      topic,
       error,
-    } as WaytradeEventMessage),
+    } as RealtimeDataMessage),
+  );
+}
+
+/** Send a response to the stream */
+function sendReponse(
+  stream: MicroserviceStream,
+  topic: string,
+  data: RealtimeDataMessagePayload,
+): void {
+  stream.send(
+    JSON.stringify({
+      topic,
+      data,
+    } as RealtimeDataMessage),
   );
 }
 
@@ -76,7 +95,7 @@ export class RealtimeDataController {
     }
 
     if (!requestHeader.has("authorization")) {
-      sendError(stream, {
+      sendError(stream, "", {
         code: HttpStatus.UNAUTHORIZED,
         desc: "Authorization header or auth argument missing",
       });
@@ -89,7 +108,7 @@ export class RealtimeDataController {
         headers: requestHeader,
       } as MicroserviceRequest);
     } catch (e) {
-      sendError(stream, {
+      sendError(stream, "", {
         code: HttpStatus.UNAUTHORIZED,
         desc: "Not authorized",
       });
@@ -97,6 +116,11 @@ export class RealtimeDataController {
       return;
     }
 
+    this.processMessages(stream);
+  }
+
+  /** Process messages on a realtime data stream. */
+  private processMessages(stream: MicroserviceStream): void {
     const subscriptionCancelSignals = new MapExt<string, Subject<void>>();
 
     // handle incomming messages
@@ -106,7 +130,7 @@ export class RealtimeDataController {
       try {
         msg = JSON.parse(data) as WaytradeEventMessage;
       } catch (e) {
-        sendError(stream, {
+        sendError(stream, "", {
           code: HttpStatus.BAD_REQUEST,
           desc: (e as Error).message,
         });
@@ -115,26 +139,31 @@ export class RealtimeDataController {
 
       if (msg.type === WaytradeEventMessageType.Subscribe && msg.topic) {
         // handle subscribe requests
-
         let subscriptionCancelSignal = subscriptionCancelSignals.get(msg.topic);
         const previousSubscriptionCancelSignal = subscriptionCancelSignal;
+        if (!subscriptionCancelSignal) {
+          subscriptionCancelSignal = new Subject<void>();
+        }
 
-        subscriptionCancelSignal = new Subject<void>();
+        subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
+        previousSubscriptionCancelSignal?.next();
+
         firstValueFrom(this.shutdown).then(() =>
           subscriptionCancelSignal?.next(),
         );
 
-        this.startSubscription(msg.topic, stream, subscriptionCancelSignal);
-
-        subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
-        previousSubscriptionCancelSignal?.next();
+        this.startSubscription(
+          msg.topic,
+          stream,
+          subscriptionCancelSignal,
+          subscriptionCancelSignals,
+        );
       } else if (msg.type === WaytradeEventMessageType.Unsubscribe) {
         // handle unsubscribe requests
-
         subscriptionCancelSignals.get(msg.topic)?.next();
         subscriptionCancelSignals.delete(msg.topic);
       } else {
-        sendError(stream, {
+        sendError(stream, msg.topic, {
           code: HttpStatus.BAD_REQUEST,
           desc: `Invalid message type: ${msg.type}`,
         });
@@ -148,80 +177,68 @@ export class RealtimeDataController {
     });
   }
 
+  /** Start a realtime data subscription. */
   private startSubscription(
     topic: string,
     stream: MicroserviceStream,
     cancel: Subject<void>,
+    subscriptionMap: MapExt<string, Subject<void>>,
   ): void {
+    function handleSubscriptionError(desc: string): void {
+      subscriptionMap.delete(topic);
+      sendError(stream, topic, {
+        code: HttpStatus.BAD_REQUEST,
+        desc,
+      });
+    }
+
+    // handle subscription requests:
+
     let sub$: Subscription | undefined = undefined;
+
+    // account summariies
     if (topic === "accountSummaries") {
       sub$ = this.apiService.accountSummaries.subscribe({
-        next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              accountSummaries: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
-        },
-        error: err => {
-          sendError(stream, {
-            code: HttpStatus.BAD_REQUEST,
-            desc: `subscribe ${topic}: ${(<Error>err).message}.`,
-          });
-        },
+        next: update =>
+          sendReponse(stream, topic, {
+            accountSummaries: update,
+          }),
+        error: err => handleSubscriptionError((<Error>err).message),
       });
-    } else if (topic === "positions") {
+    }
+
+    // positions
+    else if (topic === "positions") {
       sub$ = this.apiService.positions.subscribe({
-        next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              positions: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
-        },
-        error: err => {
-          sendError(stream, {
-            code: HttpStatus.BAD_REQUEST,
-            desc: `subscribe ${topic}: ${(<Error>err).message}.`,
-          });
-        },
+        next: update =>
+          sendReponse(stream, topic, {
+            positions: update,
+          }),
+        error: err => handleSubscriptionError((<Error>err).message),
       });
-    } else if (topic.startsWith("marketdata/")) {
+    }
+
+    // marketdata
+    else if (topic.startsWith("marketdata/")) {
       const conId = Number(topic.substr("marketdata/".length));
       if (isNaN(conId)) {
-        sendError(stream, {
-          code: HttpStatus.BAD_REQUEST,
-          desc: `subscribe ${topic}: conId is not a number.`,
-        });
+        handleSubscriptionError("conId is not a number");
         return;
       }
       sub$ = this.apiService.getMarketData(conId).subscribe({
-        next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              marketdata: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
-        },
-        error: err => {
-          sendError(stream, {
-            code: HttpStatus.BAD_REQUEST,
-            desc: `subscribe ${topic}: ${(<Error>err).message}`,
-          });
-        },
-      });
-    } else {
-      sendError(stream, {
-        code: HttpStatus.BAD_REQUEST,
-        desc: `subscribe ${topic}: invalid topic.`,
+        next: update =>
+          sendReponse(stream, topic, {
+            marketdata: update,
+          }),
+        error: err => handleSubscriptionError((<Error>err).message),
       });
     }
+
+    // invalid topic
+    else {
+      handleSubscriptionError("invalid topic");
+    }
+
     firstValueFrom(cancel).then(() => sub$?.unsubscribe());
   }
 }

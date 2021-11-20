@@ -8,19 +8,22 @@ import {
 } from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {
+  delay,
   firstValueFrom,
   lastValueFrom,
   Observable,
+  retryWhen,
   Subject,
   Subscription,
   takeUntil,
+  tap,
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
 import {PnL} from "../models/pnl.model";
 import {Position, PositionsUpdate} from "../models/position.model";
-import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
+import {IBApiServiceHelper as Helper} from "../utils/ib.helper";
 
 /**
  * Send interval on market data ticks in milliseconds.
@@ -130,67 +133,80 @@ export class IBApiService {
   /** Observe the account summaries. */
   get accountSummaries(): Observable<AccountSummary[]> {
     return new Observable<AccountSummary[]>(res => {
-      let tags = "";
+      let accountSummaryTags = "";
       ACCOUNT_SUMMARY_TAGS.forEach(tag => {
-        tags = tags + tag + ",";
+        accountSummaryTags = accountSummaryTags + tag + ",";
       });
-      tags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
+      accountSummaryTags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
 
       const cancel = new Subject<boolean>();
-      const subscribedPnlAccounts = new Set<string>();
+      const firstEventSend = new Set<string>();
 
-      let firstEvent = true;
+      subscribeUntil(
+        cancel,
+        this.api.getAccountSummary("All", accountSummaryTags),
+        {
+          error: (error: IB.IBApiNextError) => {
+            this.app.error("getAccountSummary: " + error.error.message);
+            res.error(new Error(error.error.message));
+          },
+          next: update => {
+            // collect updated
 
-      subscribeUntil(cancel, this.api.getAccountSummary("All", tags), {
-        error: (error: IB.IBApiNextError) => {
-          this.app.error("getAccountSummary: " + error.error.message);
-        },
-        next: update => {
-          // collect updated
+            const updated = new Map([
+              ...(update.changed?.entries() ?? []),
+              ...(update.added?.entries() ?? []),
+            ]);
 
-          const updated = new Map([
-            ...(update.changed?.entries() ?? []),
-            ...(update.added?.entries() ?? []),
-          ]);
+            const changed = new MapExt<string, AccountSummary>();
+            updated.forEach((tagValues, accountId) => {
+              Helper.colllectAccountSummaryTagValues(
+                accountId,
+                tagValues,
+                this.app.config.BASE_CURRENCY ?? "",
+                changed,
+              );
 
-          const changed = new MapExt<string, AccountSummary>();
-          updated.forEach((tagValues, accountId) => {
-            Helper.colllectAccountSummaryTagValues(
-              accountId,
-              tagValues,
-              this.app.config.BASE_CURRENCY ?? "",
-              changed,
-            );
-          });
+              // add baseCurrency to first event
+              if (!firstEventSend.has(accountId)) {
+                changed.forEach(
+                  v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
+                );
+                firstEventSend.add(accountId);
+              }
+            });
 
-          // add baseCurrency to first event
+            // emit update event
 
-          const changedArray = Array.from(changed.values());
-          if (firstEvent) {
-            changedArray.forEach(
-              v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
-            );
-            firstEvent = false;
-          }
-
-          // emit update event
-
-          if (changedArray.length) {
-            res.next(changedArray);
-          }
-
-          // subscribe on account PnLs
-          updated.forEach((_tagValues, accountId) => {
-            if (subscribedPnlAccounts.has(accountId)) {
-              return;
+            if (changed.size) {
+              res.next(Array.from(changed.values()));
             }
-            subscribedPnlAccounts.add(accountId);
+          },
+          complete: () => {
+            res.complete();
+          },
+        },
+      );
 
-            subscribeUntil(cancel, this.api.getPnL(accountId), {
-              error: (error: IB.IBApiNextError) => {
-                this.app.error(`getPnL(${accountId}): ${error.error.message}`);
-                subscribedPnlAccounts.delete(accountId);
-              },
+      this.getManagedAccounts().then(managedAccount => {
+        managedAccount?.forEach(accountId => {
+          subscribeUntil(
+            cancel,
+            this.api
+              .getPnL(accountId)
+              // retry once a minute on error
+              .pipe(
+                retryWhen(errors =>
+                  errors.pipe(
+                    tap(err => {
+                      this.app.error(`${err.error.message}`);
+                    }),
+                    // re-try in 10min maybe IB has recovered
+                    delay(10000),
+                  ),
+                ),
+              ),
+            {
               next: pnl => {
                 if (
                   pnl.dailyPnL !== undefined ||
@@ -206,12 +222,9 @@ export class IBApiService {
                   res.next([changedSummary]);
                 }
               },
-            });
-          });
-        },
-        complete: () => {
-          res.complete();
-        },
+            },
+          );
+        });
       });
 
       return (): void => {
@@ -234,7 +247,8 @@ export class IBApiService {
         .pipe(takeUntil(cancel))
         .subscribe({
           error: (error: IB.IBApiNextError) => {
-            this.app.error("IBApiNext.getPositions: " + error.error.message);
+            this.app.error("getPositions(): " + error.error.message);
+            res.error(new Error("getPositions(): " + error.error.message));
           },
           next: update => {
             const changed = new MapExt<string, Position>();
@@ -416,7 +430,7 @@ export class IBApiService {
             v => v.contract.conId === conId,
           )?.contract;
           if (!contract) {
-            subscriber.error(new Error("conId not found."));
+            subscriber.error(new Error("conId not found"));
             return;
           }
 
@@ -454,6 +468,7 @@ export class IBApiService {
                   `getMarketData(${conId} / ${contract.symbol}) failed with ${error.error.message}`,
                 );
                 subscriber.error(new Error(error.error.message));
+                clearInterval(sendTimer);
               },
             });
 

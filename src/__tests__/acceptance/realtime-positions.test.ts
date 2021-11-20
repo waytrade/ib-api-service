@@ -1,5 +1,11 @@
-import {IBApiNextError, PnLSingle, Position} from "@stoqey/ib";
+import {
+  AccountPositionsUpdate,
+  IBApiNextError,
+  PnLSingle,
+  Position,
+} from "@stoqey/ib";
 import axios from "axios";
+import {ReplaySubject} from "rxjs";
 import WebSocket from "ws";
 import {
   RealtimeDataMessage,
@@ -183,6 +189,21 @@ describe("Test Real-time positions", () => {
               expect(pos.realizedPnL).toEqual(PNL.realizedPnL);
             });
 
+            // single PnL errors must not chancel the subscription
+            app.ibApiMock.currentPnLSingle.error({
+              error: {message: "Test error"},
+            } as IBApiNextError);
+            // position update error must cancel the subscription
+            app.ibApiMock.currentPositionsUpdate.error({
+              error: {message: "Test error"},
+            } as IBApiNextError);
+
+            break;
+
+          case 4:
+            expect(msg.error?.desc).toEqual("getPositions(): Test error");
+
+            // must not trigger an update as subscription has terminated with an error
             PNL = {
               marketValue: Math.random(),
               dailyPnL: Math.random(),
@@ -190,12 +211,47 @@ describe("Test Real-time positions", () => {
               realizedPnL: Math.random(),
             };
             app.ibApiMock.currentPnLSingle.next(PNL);
+
+            setTimeout(() => {
+              // clear the error on the subjects
+              app.ibApiMock.currentPositionsUpdate =
+                new ReplaySubject<AccountPositionsUpdate>(1);
+              app.ibApiMock.currentPositionsUpdate.next({
+                all: positionsMap,
+                added: positionsMap,
+              });
+              app.ibApiMock.currentPnLSingle = new ReplaySubject<PnLSingle>(1);
+              app.ibApiMock.currentPnLSingle.next(PNL);
+
+              ws.send(
+                JSON.stringify({
+                  type: RealtimeDataMessageType.Subscribe,
+                  topic: "positions",
+                } as RealtimeDataMessage),
+              );
+            }, 10);
             break;
 
-          case 4:
           case 5:
+            expect(msg.data?.positions?.changed?.length).toEqual(
+              POSITIONS.length - 1,
+            );
+            msg.data?.positions?.changed?.forEach((pos, i) => {
+              expect(pos.id).toEqual(
+                POSITIONS[i].account + ":" + POSITIONS[i].contract.conId,
+              );
+              expect(pos.account).toEqual(POSITIONS[i].account);
+              expect(pos.pos).toEqual(POSITIONS[i].pos);
+              expect(pos.conId).toEqual(POSITIONS[i].contract.conId);
+            });
+            break;
+
+          case 6:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             msg.data?.positions?.changed?.forEach(pos => {
+              expect(pos.id).toEqual(
+                POSITION0.account + ":" + POSITION0.contract.conId,
+              );
               expect(pos.marketValue).toEqual(PNL.marketValue);
               expect(pos.dailyPnL).toEqual(PNL.dailyPnL);
               expect(pos.unrealizedPnL).toEqual(PNL.unrealizedPnL);
@@ -203,9 +259,25 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 6:
+          case 7:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             msg.data?.positions?.changed?.forEach(pos => {
+              expect(pos.id).toEqual(
+                POSITION1.account + ":" + POSITION1.contract.conId,
+              );
+              expect(pos.marketValue).toEqual(PNL.marketValue);
+              expect(pos.dailyPnL).toEqual(PNL.dailyPnL);
+              expect(pos.unrealizedPnL).toEqual(PNL.unrealizedPnL);
+              expect(pos.realizedPnL).toEqual(PNL.realizedPnL);
+            });
+            break;
+
+          case 8:
+            expect(msg.data?.positions?.changed?.length).toEqual(1);
+            msg.data?.positions?.changed?.forEach(pos => {
+              expect(pos.id).toEqual(
+                POSITION2.account + ":" + POSITION2.contract.conId,
+              );
               expect(pos.marketValue).toEqual(PNL.marketValue);
               expect(pos.dailyPnL).toEqual(PNL.dailyPnL);
               expect(pos.unrealizedPnL).toEqual(PNL.unrealizedPnL);
@@ -218,15 +290,15 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 7:
-          case 8:
+          case 9:
+          case 10:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             msg.data?.positions?.changed?.forEach(pos => {
               expect(pos.pos).toEqual(PNL.position);
             });
             break;
 
-          case 9:
+          case 11:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             msg.data?.positions?.changed?.forEach(pos => {
               expect(pos.pos).toEqual(PNL.position);
@@ -240,7 +312,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 10:
+          case 12:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             msg.data?.positions?.changed?.forEach(pos => {
               expect(pos.id).toEqual(
@@ -260,7 +332,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 11:
+          case 13:
             expect(msg.data?.positions?.closed?.length).toEqual(1);
             if (msg.data?.positions?.closed) {
               expect(msg.data?.positions?.closed[0]).toEqual(
@@ -274,7 +346,7 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 12:
+          case 14:
             expect(msg.data?.positions?.closed?.length).toEqual(1);
             if (msg.data?.positions?.closed) {
               expect(msg.data?.positions?.closed[0]).toEqual(
@@ -283,7 +355,7 @@ describe("Test Real-time positions", () => {
             }
             break;
 
-          case 13:
+          case 15:
             expect(msg.data?.positions?.closed?.length).toEqual(1);
             if (msg.data?.positions?.closed) {
               expect(msg.data?.positions?.closed[0]).toEqual(
@@ -297,15 +369,14 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 13:
-          case 14:
+          case 16:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             if (msg.data?.positions?.changed) {
               expect(msg.data?.positions?.changed[0].pos).toEqual(PNL.position);
             }
             break;
 
-          case 15:
+          case 17:
             expect(msg.data?.positions?.changed?.length).toEqual(1);
             if (msg.data?.positions?.changed) {
               expect(msg.data?.positions?.changed[0].pos).toEqual(PNL.position);
@@ -318,7 +389,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 16:
+          case 18:
             expect(msg.data?.positions?.closed?.length).toEqual(1);
             if (msg.data?.positions?.closed) {
               expect(msg.data?.positions?.closed[0]).toEqual(

@@ -2,7 +2,7 @@ import * as IB from "@stoqey/ib";
 import {MapExt} from "@waytrade/microservice-core";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
-import {ACCOUNT_SUMMARY_TAGS} from "./ib-api.service";
+import {ACCOUNT_SUMMARY_TAGS} from "../services/ib-api.service";
 
 /**
  * Collection of helper functions used by IBApiService.

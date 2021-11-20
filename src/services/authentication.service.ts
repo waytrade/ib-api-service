@@ -10,6 +10,16 @@ export class AuthenticationService {
   @inject("IBApiApp")
   private app!: IBApiApp;
 
+  /** Start the service. */
+  start(): void {
+    if (!this.app.config.REST_API_USERNAME) {
+      throw new Error("REST_API_USERNAME not configured.");
+    }
+    if (!this.app.config.REST_API_PASSWORD) {
+      throw new Error("REST_API_PASSWORD not configured.");
+    }
+  }
+
   /**
    * Login with username and password.
    *

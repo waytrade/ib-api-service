@@ -126,6 +126,48 @@ describe("Test App", () => {
     });
   });
 
+  test("App boot (no REST_API_USERNAME)", () => {
+    return new Promise<void>(async (resolve, reject) => {
+      const app = new IBApiApp();
+      app
+        .start({
+          SERVER_PORT: undefined,
+          REST_API_USERNAME: undefined,
+        })
+        .then(() => {
+          reject();
+        })
+        .catch((e: Error) => {
+          expect(e.message).toEqual("REST_API_USERNAME not configured.");
+          resolve();
+        })
+        .finally(() => {
+          app.stop();
+        });
+    });
+  });
+
+  test("App boot (no REST_API_PASSWORD)", () => {
+    return new Promise<void>(async (resolve, reject) => {
+      const app = new IBApiApp();
+      app
+        .start({
+          SERVER_PORT: undefined,
+          REST_API_PASSWORD: undefined,
+        })
+        .then(() => {
+          reject();
+        })
+        .catch((e: Error) => {
+          expect(e.message).toEqual("REST_API_PASSWORD not configured.");
+          resolve();
+        })
+        .finally(() => {
+          app.stop();
+        });
+    });
+  });
+
   test("App shutdown on connection loss", () => {
     return new Promise<void>(async (resolve, reject) => {
       const app = new IBApiApp();
