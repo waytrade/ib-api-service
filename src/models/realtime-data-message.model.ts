@@ -1,12 +1,7 @@
-import {
-  arrayProperty,
-  enumProperty,
-  model,
-  property,
-} from "@waytrade/microservice-core";
+import {enumProperty, model, property} from "@waytrade/microservice-core";
 import {AccountSummary} from "./account-summary.model";
 import {MarketData} from "./market-data.model";
-import {PositionsUpdate} from "./position.model";
+import {Position} from "./position.model";
 
 /**
  * Type of a real-time data message.
@@ -33,13 +28,13 @@ export class RealtimeDataError {
 /** Payload of a real-time data message. */
 @model("Payload of a message on the live-data stream.")
 export class RealtimeDataMessagePayload {
-  @arrayProperty(AccountSummary, "Update on the account summaries.")
-  accountSummaries?: AccountSummary[];
+  @property("Update on the account summary.")
+  accountSummary?: AccountSummary;
 
-  @property("Update on the positions.")
-  positions?: PositionsUpdate;
+  @property("Updated position.")
+  position?: Position;
 
-  @property("Update on market data.")
+  @property("Updated market data.")
   marketdata?: MarketData;
 }
 
