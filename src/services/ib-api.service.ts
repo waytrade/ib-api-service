@@ -23,7 +23,7 @@ import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
 import {PnL} from "../models/pnl.model";
 import {Position, PositionsUpdate} from "../models/position.model";
-import {IBApiServiceHelper as Helper} from "./ib-api.service.helper";
+import {IBApiServiceHelper as Helper} from "../utils/ib.helper";
 
 /**
  * Send interval on market data ticks in milliseconds.

@@ -1,3 +1,5 @@
 {
-  "LOG_LEVEL": "silent"
+  "LOG_LEVEL": "silent",
+  "REST_API_USERNAME": "test",
+  "REST_API_PASSWORD": "test"
 }

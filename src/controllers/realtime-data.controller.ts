@@ -19,6 +19,7 @@ import {firstValueFrom, Subject, Subscription} from "rxjs";
 import {
   RealtimeDataError,
   RealtimeDataMessage,
+  RealtimeDataMessagePayload,
 } from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
@@ -33,6 +34,20 @@ function sendError(
     JSON.stringify({
       topic,
       error,
+    } as RealtimeDataMessage),
+  );
+}
+
+/** Send a response to the stream */
+function sendReponse(
+  stream: MicroserviceStream,
+  topic: string,
+  data: RealtimeDataMessagePayload,
+): void {
+  stream.send(
+    JSON.stringify({
+      topic,
+      data,
     } as RealtimeDataMessage),
   );
 }
@@ -101,6 +116,11 @@ export class RealtimeDataController {
       return;
     }
 
+    this.processMessages(stream);
+  }
+
+  /** Process messages on a realtime data stream. */
+  private processMessages(stream: MicroserviceStream): void {
     const subscriptionCancelSignals = new MapExt<string, Subject<void>>();
 
     // handle incomming messages
@@ -125,21 +145,19 @@ export class RealtimeDataController {
           subscriptionCancelSignal = new Subject<void>();
         }
 
-        if (subscriptionCancelSignal) {
-          subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
-          previousSubscriptionCancelSignal?.next();
+        subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
+        previousSubscriptionCancelSignal?.next();
 
-          firstValueFrom(this.shutdown).then(() =>
-            subscriptionCancelSignal?.next(),
-          );
+        firstValueFrom(this.shutdown).then(() =>
+          subscriptionCancelSignal?.next(),
+        );
 
-          this.startSubscription(
-            msg.topic,
-            stream,
-            subscriptionCancelSignal,
-            subscriptionCancelSignals,
-          );
-        }
+        this.startSubscription(
+          msg.topic,
+          stream,
+          subscriptionCancelSignal,
+          subscriptionCancelSignals,
+        );
       } else if (msg.type === WaytradeEventMessageType.Unsubscribe) {
         // handle unsubscribe requests
         subscriptionCancelSignals.get(msg.topic)?.next();
@@ -159,6 +177,7 @@ export class RealtimeDataController {
     });
   }
 
+  /** Start a realtime data subscription. */
   private startSubscription(
     topic: string,
     stream: MicroserviceStream,
@@ -173,56 +192,50 @@ export class RealtimeDataController {
       });
     }
 
+    // handle subscription requests:
+
     let sub$: Subscription | undefined = undefined;
 
+    // account summariies
     if (topic === "accountSummaries") {
       sub$ = this.apiService.accountSummaries.subscribe({
-        next: update => {
-          stream.send(
-            JSON.stringify({
-              topic,
-              data: {
-                accountSummaries: update,
-              },
-            } as RealtimeDataMessage),
-          );
-        },
+        next: update =>
+          sendReponse(stream, topic, {
+            accountSummaries: update,
+          }),
         error: err => handleSubscriptionError((<Error>err).message),
       });
-    } else if (topic === "positions") {
+    }
+
+    // positions
+    else if (topic === "positions") {
       sub$ = this.apiService.positions.subscribe({
-        next: update => {
-          stream.send(
-            JSON.stringify({
-              topic,
-              data: {
-                positions: update,
-              },
-            } as RealtimeDataMessage),
-          );
-        },
+        next: update =>
+          sendReponse(stream, topic, {
+            positions: update,
+          }),
         error: err => handleSubscriptionError((<Error>err).message),
       });
-    } else if (topic.startsWith("marketdata/")) {
+    }
+
+    // marketdata
+    else if (topic.startsWith("marketdata/")) {
       const conId = Number(topic.substr("marketdata/".length));
       if (isNaN(conId)) {
         handleSubscriptionError("conId is not a number");
         return;
       }
       sub$ = this.apiService.getMarketData(conId).subscribe({
-        next: update => {
-          stream.send(
-            JSON.stringify({
-              topic,
-              data: {
-                marketdata: update,
-              },
-            } as RealtimeDataMessage),
-          );
-        },
+        next: update =>
+          sendReponse(stream, topic, {
+            marketdata: update,
+          }),
         error: err => handleSubscriptionError((<Error>err).message),
       });
-    } else {
+    }
+
+    // invalid topic
+    else {
       handleSubscriptionError("invalid topic");
     }
 

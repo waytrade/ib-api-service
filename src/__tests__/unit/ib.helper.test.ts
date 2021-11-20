@@ -6,7 +6,7 @@ import {
 import TickType from "@stoqey/ib/dist/api/market/tickType";
 import {MapExt} from "@waytrade/microservice-core";
 import {AccountSummary} from "../../models/account-summary.model";
-import {IBApiServiceHelper} from "../../services/ib-api.service.helper";
+import {IBApiServiceHelper} from "../../utils/ib.helper";
 
 describe("Test IBApiServiceHelper", () => {
   test("Test formatPositionId", () => {
