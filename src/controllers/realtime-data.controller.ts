@@ -20,6 +20,7 @@ import {
   RealtimeDataError,
   RealtimeDataMessage,
   RealtimeDataMessagePayload,
+  RealtimeDataMessageType,
 } from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
@@ -42,10 +43,12 @@ function sendError(
 function sendReponse(
   stream: MicroserviceStream,
   topic: string,
-  data: RealtimeDataMessagePayload,
+  data?: RealtimeDataMessagePayload,
+  type?: RealtimeDataMessageType,
 ): void {
   stream.send(
     JSON.stringify({
+      type,
       topic,
       data,
     } as RealtimeDataMessage),
@@ -73,8 +76,8 @@ export class RealtimeDataController {
       "To subscribe on a message topic, send a LiveDataMessage with a valid topic attribute and type='subscribe'.</br>" +
       "To unsubscribe from a message topic, send a LiveDataMessage with a valid topic attribute and type='unsubscribe'</br>" +
       "</br>Avaiable message topics:</br><ul>" +
-      "<li>accountSummaries</li>" +
-      "<li>positions</li>" +
+      "<li>accountSummary/#</li>" +
+      "<li>position/#</li>" +
       "<li>marketdata/&lt;conId&gt;</li>" +
       "</ul>",
   )
@@ -193,34 +196,68 @@ export class RealtimeDataController {
     }
 
     // handle subscription requests:
+    const topicTokens = topic.split("/");
 
     let sub$: Subscription | undefined = undefined;
 
     // account summariies
-    if (topic === "accountSummaries") {
+    if (topicTokens[0] === "accountSummary") {
+      const accountId = topicTokens[1];
+      if (accountId !== "#") {
+        sendError(stream, topic, {
+          code: HttpStatus.BAD_REQUEST,
+          desc: "invalid topic, only 'accountSummary/#' wildcard supported",
+        });
+        return;
+      }
+
       sub$ = this.apiService.accountSummaries.subscribe({
-        next: update =>
-          sendReponse(stream, topic, {
-            accountSummaries: update,
-          }),
+        next: update => {
+          update.forEach(summary => {
+            sendReponse(stream, topicTokens[0] + "/" + summary.account, {
+              accountSummary: summary,
+            });
+          });
+        },
         error: err => handleSubscriptionError((<Error>err).message),
       });
     }
 
-    // positions
-    else if (topic === "positions") {
+    // position
+    else if (topicTokens[0] === "position") {
+      const posId = topicTokens[1];
+      if (posId !== "#") {
+        sendError(stream, topic, {
+          code: HttpStatus.BAD_REQUEST,
+          desc: "invalid topic, only 'position/#' wildcard supported",
+        });
+        return;
+      }
+
       sub$ = this.apiService.positions.subscribe({
-        next: update =>
-          sendReponse(stream, topic, {
-            positions: update,
-          }),
+        next: update => {
+          update.changed?.forEach(position => {
+            sendReponse(stream, topicTokens[0] + "/" + position.id, {
+              position,
+            });
+          });
+
+          update.closed?.forEach(position => {
+            sendReponse(
+              stream,
+              topicTokens[0] + "/" + position.id,
+              undefined,
+              RealtimeDataMessageType.Unpublish,
+            );
+          });
+        },
         error: err => handleSubscriptionError((<Error>err).message),
       });
     }
 
     // marketdata
-    else if (topic.startsWith("marketdata/")) {
-      const conId = Number(topic.substr("marketdata/".length));
+    else if (topicTokens[0] == "marketdata") {
+      const conId = Number(topicTokens[1]);
       if (isNaN(conId)) {
         handleSubscriptionError("conId is not a number");
         return;

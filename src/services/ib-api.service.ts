@@ -22,7 +22,7 @@ import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
 import {PnL} from "../models/pnl.model";
-import {Position, PositionsUpdate} from "../models/position.model";
+import {Position} from "../models/position.model";
 import {IBApiServiceHelper as Helper} from "../utils/ib.helper";
 
 /**
@@ -70,6 +70,15 @@ export const ACCOUNT_SUMMARY_TAGS = [
   "DayTradesRemaining",
   "Leverage",
 ];
+
+/** An update the positions.  */
+export class PositionsUpdate {
+  /** List of positions added or changed since last update. */
+  changed?: Position[];
+
+  /** List of positions closed since last update. */
+  closed?: Position[];
+}
 
 /**
  * The Interactive Brokers TWS API Service
@@ -234,7 +243,7 @@ export class IBApiService {
     });
   }
 
-  /** Observe the account positions. */
+  /** Observe the inventory positions. */
   get positions(): Observable<PositionsUpdate> {
     return new Observable<PositionsUpdate>(res => {
       const cancel = new Subject();
@@ -276,24 +285,34 @@ export class IBApiService {
                   return;
                 }
 
-                let hasChanged = false;
+                let newPosition = false;
                 const prevPositions = previosPositions.getOrAdd(posId, () => {
-                  hasChanged = true;
+                  newPosition = true;
                   return new Position({
                     id: posId,
+                    avgCost: ibPosition.avgCost,
                     account: accountId,
                     conId: ibPosition.contract.conId,
                     pos: ibPosition.pos,
                   });
                 });
 
-                if (prevPositions.avgCost !== ibPosition.avgCost) {
-                  prevPositions.avgCost = ibPosition.avgCost;
-                  hasChanged = true;
-                }
+                const changedPos: Position = {
+                  id: posId,
+                  avgCost:
+                    prevPositions.avgCost !== ibPosition.avgCost
+                      ? ibPosition.avgCost
+                      : undefined,
+                  pos:
+                    prevPositions.pos !== ibPosition.pos
+                      ? ibPosition.pos
+                      : undefined,
+                };
 
-                if (hasChanged) {
+                if (newPosition) {
                   changed.set(posId, prevPositions);
+                } else if (Object.keys(changedPos).length > 1) {
+                  changed.set(posId, changedPos);
                 }
               });
             });
@@ -308,18 +327,20 @@ export class IBApiService {
               });
             });
 
-            removedIds.forEach(id => {
-              previosPositions.delete(id);
-            });
-
             // emit update event
 
             if (changed.size || removedIds.size) {
+              const closedPositions: Position[] = [];
+              removedIds.forEach(id => {
+                previosPositions.delete(id);
+                closedPositions.push(new Position({id}));
+              });
+
               res.next({
                 changed: changed.size
                   ? Array.from(changed.values())
                   : undefined,
-                closed: removedIds.size ? Array.from(removedIds) : undefined,
+                closed: closedPositions,
               });
             }
 
@@ -357,15 +378,22 @@ export class IBApiService {
                     next: pnl => {
                       let prePos = previosPositions.get(posId);
 
-                      if (pnl.position !== undefined && !pnl.position) {
+                      if (
+                        prePos &&
+                        pnl.position !== undefined &&
+                        !pnl.position
+                      ) {
                         previosPositions.delete(posId);
                         res.next({
-                          closed: [posId],
+                          closed: [new Position({id: posId})],
                         });
                         return;
                       }
 
                       const changedPos: Position = {id: posId};
+                      if (prePos?.account !== accountId) {
+                        changedPos.account = accountId;
+                      }
                       if (prePos?.dailyPnL !== pnl.dailyPnL) {
                         changedPos.dailyPnL = pnl.dailyPnL;
                       }

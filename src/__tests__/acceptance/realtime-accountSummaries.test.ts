@@ -98,7 +98,7 @@ describe("Test Real-time accountSummaries", () => {
         ws.send(
           JSON.stringify({
             type: RealtimeDataMessageType.Subscribe,
-            topic: "accountSummaries",
+            topic: "accountSummary/#",
           } as RealtimeDataMessage),
         );
 
@@ -125,17 +125,12 @@ describe("Test Real-time accountSummaries", () => {
         const msg = JSON.parse(event.data.toString()) as RealtimeDataMessage;
         switch (messagesReceived) {
           case 0: {
-            expect(msg.topic).toEqual("accountSummaries");
-            expect(msg.data?.accountSummaries).toBeDefined();
-            if (!msg.data?.accountSummaries) {
-              return;
-            }
-            const accountSummary = msg.data.accountSummaries[0];
-            expect(accountSummary.baseCurrency).toEqual(
+            expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.baseCurrency).toEqual(
               app.config.BASE_CURRENCY,
             );
-            expect(accountSummary.account).toEqual(TEST_ACCOUNT);
-            expect(accountSummary.netLiquidation).toEqual(TEST_NAV);
+            expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.netLiquidation).toEqual(TEST_NAV);
 
             // account PnL errors are irgnore and must not lead subscription error
 
@@ -153,7 +148,7 @@ describe("Test Real-time accountSummaries", () => {
           }
 
           case 1: {
-            expect(msg.topic).toEqual("accountSummaries");
+            expect(msg.topic).toEqual("accountSummary/#");
             expect(msg.error?.desc).toEqual("Test error");
 
             app.ibApiMock.accountSummaryUpdate =
@@ -163,7 +158,7 @@ describe("Test Real-time accountSummaries", () => {
             ws.send(
               JSON.stringify({
                 type: RealtimeDataMessageType.Subscribe,
-                topic: "accountSummaries",
+                topic: "accountSummary/#",
               } as RealtimeDataMessage),
             );
 
@@ -191,17 +186,14 @@ describe("Test Real-time accountSummaries", () => {
           }
 
           case 2: {
-            expect(msg.topic).toEqual("accountSummaries");
-            expect(msg.data?.accountSummaries).toBeDefined();
-            if (!msg.data?.accountSummaries) {
-              return;
-            }
-            const accountSummary = msg.data.accountSummaries[0];
-            expect(accountSummary.baseCurrency).toEqual(
+            expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.baseCurrency).toEqual(
               app.config.BASE_CURRENCY,
             );
-            expect(accountSummary.account).toEqual(TEST_ACCOUNT);
-            expect(accountSummary.totalCashValue).toEqual(TEST_TOTAL_CASH);
+            expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.totalCashValue).toEqual(
+              TEST_TOTAL_CASH,
+            );
 
             TEST_NAV = Math.random();
 
@@ -224,16 +216,12 @@ describe("Test Real-time accountSummaries", () => {
             );
             break;
           }
+
           case 3: {
-            expect(msg.topic).toBe("accountSummaries");
-            expect(msg.data?.accountSummaries).toBeDefined();
-            if (!msg.data?.accountSummaries) {
-              return;
-            }
-            const accountSummary = msg.data.accountSummaries[0];
-            expect(accountSummary.baseCurrency).toBeUndefined();
-            expect(accountSummary.account).toEqual(TEST_ACCOUNT);
-            expect(accountSummary.netLiquidation).toEqual(TEST_NAV);
+            expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.baseCurrency).toBeUndefined();
+            expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.netLiquidation).toEqual(TEST_NAV);
 
             app.ibApiMock.currentPnL.next({
               realizedPnL: TEST_REALIZED_PNL,
@@ -243,20 +231,19 @@ describe("Test Real-time accountSummaries", () => {
           }
 
           case 4: {
-            expect(msg.topic).toBe("accountSummaries");
-            expect(msg.data?.accountSummaries).toBeDefined();
-            if (!msg.data?.accountSummaries) {
-              return;
-            }
-            const accountSummary = msg.data.accountSummaries[0];
-            expect(accountSummary.account).toEqual(TEST_ACCOUNT);
-            expect(accountSummary.realizedPnL).toEqual(TEST_REALIZED_PNL);
-            expect(accountSummary.unrealizedPnL).toEqual(TEST_UNREALIZED_PNL);
+            expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.realizedPnL).toEqual(
+              TEST_REALIZED_PNL,
+            );
+            expect(msg.data?.accountSummary?.unrealizedPnL).toEqual(
+              TEST_UNREALIZED_PNL,
+            );
 
             ws.send(
               JSON.stringify({
                 type: RealtimeDataMessageType.Unsubscribe,
-                topic: "accountSummaries",
+                topic: "accountSummary/#",
               } as RealtimeDataMessage),
             );
 
@@ -279,10 +266,7 @@ describe("Test Real-time accountSummaries", () => {
                 ]),
               );
               setTimeout(() => {
-                ws.onclose = () => {
-                  resolve();
-                };
-                ws.close();
+                resolve();
               }, 50);
             }, 10);
 
@@ -298,5 +282,5 @@ describe("Test Real-time accountSummaries", () => {
         messagesReceived++;
       };
     });
-  }, 99999999);
+  });
 });

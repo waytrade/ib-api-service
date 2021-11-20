@@ -1,4 +1,4 @@
-import {arrayProperty, model, property} from "@waytrade/microservice-core";
+import {model, property} from "@waytrade/microservice-core";
 
 /**
  * A position on an IBKR account.
@@ -44,23 +44,6 @@ export class Position {
   /** The current market value of the position. */
   @property("The current market value of the position.")
   marketValue?: number;
-}
-
-/**
- * An update the positions.
- */
-@model("An update the positions.")
-export class PositionsUpdate {
-  /** List of positions IDs added or changed since last update. */
-  @arrayProperty(
-    Position,
-    "List of added or changed positions since last update.",
-  )
-  changed?: Position[];
-
-  /** List of positions ids closed since last update. */
-  @arrayProperty(String, "List of closed positions since last update.")
-  closed?: string[];
 }
 
 /**
