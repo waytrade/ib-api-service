@@ -121,21 +121,25 @@ export class RealtimeDataController {
         // handle subscribe requests
         let subscriptionCancelSignal = subscriptionCancelSignals.get(msg.topic);
         const previousSubscriptionCancelSignal = subscriptionCancelSignal;
+        if (!subscriptionCancelSignal) {
+          subscriptionCancelSignal = new Subject<void>();
+        }
 
-        subscriptionCancelSignal = new Subject<void>();
-        firstValueFrom(this.shutdown).then(() =>
-          subscriptionCancelSignal?.next(),
-        );
+        if (subscriptionCancelSignal) {
+          subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
+          previousSubscriptionCancelSignal?.next();
 
-        this.startSubscription(
-          msg.topic,
-          stream,
-          subscriptionCancelSignal,
-          subscriptionCancelSignals,
-        );
+          firstValueFrom(this.shutdown).then(() =>
+            subscriptionCancelSignal?.next(),
+          );
 
-        subscriptionCancelSignals.set(msg.topic, subscriptionCancelSignal);
-        previousSubscriptionCancelSignal?.next();
+          this.startSubscription(
+            msg.topic,
+            stream,
+            subscriptionCancelSignal,
+            subscriptionCancelSignals,
+          );
+        }
       } else if (msg.type === WaytradeEventMessageType.Unsubscribe) {
         // handle unsubscribe requests
         subscriptionCancelSignals.get(msg.topic)?.next();
@@ -170,29 +174,32 @@ export class RealtimeDataController {
     }
 
     let sub$: Subscription | undefined = undefined;
+
     if (topic === "accountSummaries") {
       sub$ = this.apiService.accountSummaries.subscribe({
         next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              accountSummaries: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
+          stream.send(
+            JSON.stringify({
+              topic,
+              data: {
+                accountSummaries: update,
+              },
+            } as RealtimeDataMessage),
+          );
         },
         error: err => handleSubscriptionError((<Error>err).message),
       });
     } else if (topic === "positions") {
       sub$ = this.apiService.positions.subscribe({
         next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              positions: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
+          stream.send(
+            JSON.stringify({
+              topic,
+              data: {
+                positions: update,
+              },
+            } as RealtimeDataMessage),
+          );
         },
         error: err => handleSubscriptionError((<Error>err).message),
       });
@@ -204,13 +211,14 @@ export class RealtimeDataController {
       }
       sub$ = this.apiService.getMarketData(conId).subscribe({
         next: update => {
-          const msg: RealtimeDataMessage = {
-            topic,
-            data: {
-              marketdata: update,
-            },
-          };
-          stream.send(JSON.stringify(msg));
+          stream.send(
+            JSON.stringify({
+              topic,
+              data: {
+                marketdata: update,
+              },
+            } as RealtimeDataMessage),
+          );
         },
         error: err => handleSubscriptionError((<Error>err).message),
       });
