@@ -1,7 +1,8 @@
-import {MarketDataTick} from "@stoqey/ib";
+import {MarketDataTick, MarketDataUpdate} from "@stoqey/ib";
 import TickType from "@stoqey/ib/dist/api/market/tickType";
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
+import {ReplaySubject} from "rxjs";
 import WebSocket from "ws";
 import {
   RealtimeDataMessage,
@@ -83,10 +84,9 @@ describe("Test Real-time marketdata", () => {
         const msg = JSON.parse(event.data.toString()) as RealtimeDataMessage;
         switch (messagesReceived) {
           case 0:
+            expect(msg.topic).toEqual("marketdata/noNumber");
             expect(msg.error?.code).toEqual(HttpStatus.BAD_REQUEST);
-            expect(msg.error?.desc).toEqual(
-              "subscribe marketdata/noNumber: conId is not a number.",
-            );
+            expect(msg.error?.desc).toEqual("conId is not a number");
 
             ws.send(
               JSON.stringify({
@@ -95,11 +95,63 @@ describe("Test Real-time marketdata", () => {
               } as RealtimeDataMessage),
             );
             break;
+
           case 1:
             expect(msg.error?.code).toEqual(HttpStatus.BAD_REQUEST);
-            expect(msg.error?.desc).toEqual(
-              "subscribe marketdata/123456789: conId not found.",
+            expect(msg.topic).toEqual("marketdata/123456789");
+            expect(msg.error?.desc).toEqual("conId not found");
+
+            app.ibApiMock.getContractDetailsError = {
+              code: 0,
+              reqId: 0,
+              error: {
+                name: "getContractDetailsError test error",
+                message: "getContractDetailsError test error",
+              },
+            };
+
+            ws.send(
+              JSON.stringify({
+                type: RealtimeDataMessageType.Subscribe,
+                topic: "marketdata/123456789",
+              } as RealtimeDataMessage),
             );
+
+            break;
+
+          case 2:
+            expect(msg.error?.code).toEqual(HttpStatus.BAD_REQUEST);
+            expect(msg.topic).toEqual("marketdata/123456789");
+            expect(msg.error?.desc).toEqual(
+              "getContractDetailsError test error",
+            );
+
+            delete app.ibApiMock.getContractDetailsError;
+
+            ws.send(
+              JSON.stringify({
+                type: RealtimeDataMessageType.Subscribe,
+                topic: `marketdata/${TEST_CONID1}`,
+              } as RealtimeDataMessage),
+            );
+
+            setTimeout(() => {
+              app.ibApiMock.marketDataUpdate.error({
+                error: {
+                  message: "marketData Test Error",
+                },
+              });
+            }, 10);
+
+            break;
+
+          case 3:
+            expect(msg.error?.code).toEqual(HttpStatus.BAD_REQUEST);
+            expect(msg.topic).toEqual(`marketdata/${TEST_CONID1}`);
+            expect(msg.error?.desc).toEqual("marketData Test Error");
+
+            app.ibApiMock.marketDataUpdate =
+              new ReplaySubject<MarketDataUpdate>(1);
 
             emitTestTick(TickType.ASK, {
               value: Math.random(),
@@ -114,7 +166,7 @@ describe("Test Real-time marketdata", () => {
             );
             break;
 
-          case 2:
+          case 4:
             expect(msg.topic).toEqual(`marketdata/${TEST_CONID1}`);
             expect(msg.data?.marketdata?.ASK).toEqual(
               TEST_TICKS.get(TickType.ASK)?.value,
@@ -135,7 +187,7 @@ describe("Test Real-time marketdata", () => {
 
             break;
 
-          case 3:
+          case 5:
             expect(msg.topic).toEqual(`marketdata/${TEST_CONID1}`);
             expect(msg.data?.marketdata?.BID).toEqual(
               TEST_TICKS.get(TickType.BID)?.value,
@@ -149,5 +201,5 @@ describe("Test Real-time marketdata", () => {
         messagesReceived++;
       };
     });
-  });
+  }, 99999);
 });

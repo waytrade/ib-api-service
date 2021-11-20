@@ -46,6 +46,10 @@ export class RealtimeDataMessagePayload {
 /** A message on the real-time data stream. */
 @model("A message on the real-time data stream.")
 export class RealtimeDataMessage {
+  /** The message topic. */
+  @property("The message topic.")
+  topic!: string;
+
   @property(
     "If valid, this a error mesaage and this attribute provides details " +
       "about the error",
@@ -59,10 +63,6 @@ export class RealtimeDataMessage {
     "The message type.  'publish' if not specified.",
   )
   type?: RealtimeDataMessageType;
-
-  /** The message topic. */
-  @property("An error event.")
-  topic!: string;
 
   /** The message data payload. */
   @property("The message data payload.")

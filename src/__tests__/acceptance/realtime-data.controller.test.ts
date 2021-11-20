@@ -121,10 +121,9 @@ describe("Test Real-time Data Controller", () => {
       };
       ws.onmessage = event => {
         const msg = JSON.parse(event.data.toString()) as RealtimeDataMessage;
+        expect(msg.topic).toEqual("invalidTopic");
         expect(msg.error?.code).toEqual(HttpStatus.BAD_REQUEST);
-        expect(msg.error?.desc).toEqual(
-          "subscribe invalidTopic: invalid topic.",
-        );
+        expect(msg.error?.desc).toEqual("invalid topic");
 
         resolve();
       };
