@@ -129,7 +129,7 @@ describe("Test Real-time positions", () => {
         ws.send(
           JSON.stringify({
             type: RealtimeDataMessageType.Subscribe,
-            topic: "position/#",
+            topic: "position/",
           } as RealtimeDataMessage),
         );
       };
@@ -139,34 +139,38 @@ describe("Test Real-time positions", () => {
 
         switch (messagesReceived) {
           case 0:
+            expect(msg.topic).toBe("position/");
+            expect(msg.error?.desc).toEqual(
+              "invalid topic, only 'position/#' wildcard supported",
+            );
+
+            ws.send(
+              JSON.stringify({
+                type: RealtimeDataMessageType.Subscribe,
+                topic: "position/#",
+              } as RealtimeDataMessage),
+            );
+            break;
+          case 1:
             expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.account).toEqual(POSITION0.account);
             expect(msg.data?.position?.pos).toEqual(POSITION0.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION0.contract.conId);
             break;
-          case 1:
+          case 2:
             expect(msg.topic).toBe("position/" + POSITION1_ID);
             expect(msg.data?.position?.account).toEqual(POSITION1.account);
             expect(msg.data?.position?.pos).toEqual(POSITION1.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION1.contract.conId);
             break;
-          case 2:
+          case 3:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.account).toEqual(POSITION2.account);
             expect(msg.data?.position?.pos).toEqual(POSITION2.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION2.contract.conId);
             break;
-          case 3:
-            expect(msg.topic).toBe("position/" + POSITION0_ID);
-            expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
-            expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
-            expect(msg.data?.position?.unrealizedPnL).toEqual(
-              PNL.unrealizedPnL,
-            );
-            expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
-            break;
           case 4:
-            expect(msg.topic).toBe("position/" + POSITION1_ID);
+            expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
             expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
             expect(msg.data?.position?.unrealizedPnL).toEqual(
@@ -175,6 +179,15 @@ describe("Test Real-time positions", () => {
             expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
             break;
           case 5:
+            expect(msg.topic).toBe("position/" + POSITION1_ID);
+            expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
+            expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
+            expect(msg.data?.position?.unrealizedPnL).toEqual(
+              PNL.unrealizedPnL,
+            );
+            expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
+            break;
+          case 6:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
             expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
@@ -191,10 +204,8 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPositionsUpdate.error({
               error: {message: "Test error"},
             } as IBApiNextError);
-
             break;
-
-          case 6:
+          case 7:
             expect(msg.topic).toBe("position/#");
             expect(msg.error?.desc).toEqual("getPositions(): Test error");
 
@@ -226,36 +237,26 @@ describe("Test Real-time positions", () => {
               );
             }, 10);
             break;
-
-          case 7:
+          case 8:
             expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.account).toEqual(POSITION0.account);
             expect(msg.data?.position?.pos).toEqual(POSITION0.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION0.contract.conId);
             break;
-          case 8:
+          case 9:
             expect(msg.topic).toBe("position/" + POSITION1_ID);
             expect(msg.data?.position?.account).toEqual(POSITION1.account);
             expect(msg.data?.position?.pos).toEqual(POSITION1.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION1.contract.conId);
             break;
-          case 9:
+          case 10:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.account).toEqual(POSITION2.account);
             expect(msg.data?.position?.pos).toEqual(POSITION2.pos);
             expect(msg.data?.position?.conId).toEqual(POSITION2.contract.conId);
             break;
-          case 10:
-            expect(msg.topic).toBe("position/" + POSITION0_ID);
-            expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
-            expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
-            expect(msg.data?.position?.unrealizedPnL).toEqual(
-              PNL.unrealizedPnL,
-            );
-            expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
-            break;
           case 11:
-            expect(msg.topic).toBe("position/" + POSITION1_ID);
+            expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
             expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
             expect(msg.data?.position?.unrealizedPnL).toEqual(
@@ -264,6 +265,15 @@ describe("Test Real-time positions", () => {
             expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
             break;
           case 12:
+            expect(msg.topic).toBe("position/" + POSITION1_ID);
+            expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
+            expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
+            expect(msg.data?.position?.unrealizedPnL).toEqual(
+              PNL.unrealizedPnL,
+            );
+            expect(msg.data?.position?.realizedPnL).toEqual(PNL.realizedPnL);
+            break;
+          case 13:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.marketValue).toEqual(PNL.marketValue);
             expect(msg.data?.position?.dailyPnL).toEqual(PNL.dailyPnL);
@@ -278,17 +288,17 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 13:
+          case 14:
             expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.pos).toEqual(PNL.position);
             break;
 
-          case 14:
+          case 15:
             expect(msg.topic).toBe("position/" + POSITION1_ID);
             expect(msg.data?.position?.pos).toEqual(PNL.position);
             break;
 
-          case 15:
+          case 16:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.pos).toEqual(PNL.position);
 
@@ -300,7 +310,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 16:
+          case 17:
             expect(msg.topic).toBe("position/" + POSITION0_ID);
             expect(msg.data?.position?.avgCost).toEqual(POSITION0.avgCost);
 
@@ -315,7 +325,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 17:
+          case 18:
             expect(msg.type).toBe(RealtimeDataMessageType.Unpublish);
             expect(msg.topic).toBe("position/" + POSITION0_ID);
 
@@ -325,12 +335,12 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 18:
+          case 19:
             expect(msg.type).toBe(RealtimeDataMessageType.Unpublish);
             expect(msg.topic).toBe("position/" + POSITION1_ID);
             break;
 
-          case 19:
+          case 20:
             expect(msg.type).toBe(RealtimeDataMessageType.Unpublish);
             expect(msg.topic).toBe("position/" + POSITION2_ID);
 
@@ -340,12 +350,12 @@ describe("Test Real-time positions", () => {
             app.ibApiMock.currentPnLSingle.next(PNL);
             break;
 
-          case 20:
+          case 21:
             expect(msg.topic).toBe("position/" + POSITION1_ID);
             expect(msg.data?.position?.pos).toEqual(PNL.position);
             break;
 
-          case 21:
+          case 22:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.pos).toEqual(PNL.position);
 
@@ -356,7 +366,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 22:
+          case 23:
             expect(msg.topic).toBe("position/" + POSITION2_ID);
             expect(msg.data?.position?.avgCost).toBe(POSITION2.avgCost);
 
@@ -367,7 +377,7 @@ describe("Test Real-time positions", () => {
             });
             break;
 
-          case 23:
+          case 24:
             expect(msg.type).toBe(RealtimeDataMessageType.Unpublish);
             expect(msg.topic).toBe("position/" + POSITION2_ID);
 

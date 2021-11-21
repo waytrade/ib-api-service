@@ -154,6 +154,21 @@ describe("Test Real-time accountSummaries", () => {
             app.ibApiMock.accountSummaryUpdate =
               new ReplaySubject<AccountSummariesUpdate>(1);
             app.ibApiMock.currentPnL = new BehaviorSubject<PnL>({});
+            ws.send(
+              JSON.stringify({
+                type: RealtimeDataMessageType.Subscribe,
+                topic: "accountSummary/",
+              } as RealtimeDataMessage),
+            );
+
+            break;
+          }
+
+          case 2: {
+            expect(msg.topic).toEqual("accountSummary/");
+            expect(msg.error?.desc).toEqual(
+              "invalid topic, only 'accountSummary/#' wildcard supported",
+            );
 
             ws.send(
               JSON.stringify({
@@ -185,7 +200,7 @@ describe("Test Real-time accountSummaries", () => {
             break;
           }
 
-          case 2: {
+          case 3: {
             expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
             expect(msg.data?.accountSummary?.baseCurrency).toEqual(
               app.config.BASE_CURRENCY,
@@ -217,7 +232,7 @@ describe("Test Real-time accountSummaries", () => {
             break;
           }
 
-          case 3: {
+          case 4: {
             expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
             expect(msg.data?.accountSummary?.baseCurrency).toBeUndefined();
             expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
@@ -230,7 +245,7 @@ describe("Test Real-time accountSummaries", () => {
             break;
           }
 
-          case 4: {
+          case 5: {
             expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
             expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
             expect(msg.data?.accountSummary?.realizedPnL).toEqual(
