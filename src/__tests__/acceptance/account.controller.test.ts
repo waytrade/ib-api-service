@@ -1,7 +1,10 @@
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
 import {AccountList} from "../../models/account-list.model";
-import {PnL} from "../../models/pnl.model";
+import {
+  AccountSummary,
+  AccountSummaryList,
+} from "../../models/account-summary.model";
 import {IBApiApp} from "../ib-api-test-app";
 
 describe("Test Account Controller", () => {
@@ -58,16 +61,9 @@ describe("Test Account Controller", () => {
     }
   });
 
-  test("GET /pnl", async () => {
-    const REF_PNL: PnL = {
-      dailyPnL: Math.random(),
-      unrealizedPnL: Math.random(),
-      realizedPnL: Math.random(),
-    };
-    app.ibApiMock.currentPnL.next(REF_PNL);
-
-    const res = await axios.get<PnL>(
-      baseUrl + `/pnl?account=${TEST_ACCOUNT_ID}`,
+  test("GET /accountSummaries", async () => {
+    const res = await axios.get<AccountSummaryList>(
+      baseUrl + "/accountSummaries",
       {
         headers: {
           authorization: authToken,
@@ -75,31 +71,41 @@ describe("Test Account Controller", () => {
       },
     );
     expect(res.status).toEqual(HttpStatus.OK);
-    expect(res.data).toEqual(REF_PNL);
+    expect(res.data.summaries?.length).toEqual(0);
   });
 
-  test("GET /pnl (no authorization)", async () => {
+  test("GET /accountSummaries (no authorization)", async () => {
     try {
-      await axios.get<AccountList>(
-        baseUrl + `/pnl?account=${TEST_ACCOUNT_ID}`,
-        {},
-      );
+      await axios.get<AccountList>(baseUrl + "/accountSummaries", {});
       throw "This must fail";
     } catch (e) {
       expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
-  test("GET /pnl (no account argument)", async () => {
-    try {
-      await axios.get<AccountList>(baseUrl + "/pnl", {
+  test("GET /accountSummary/account", async () => {
+    const res = await axios.get<AccountSummary>(
+      baseUrl + "/accountSummary/" + TEST_ACCOUNT_ID,
+      {
         headers: {
           authorization: authToken,
         },
-      });
+      },
+    );
+    expect(res.status).toEqual(HttpStatus.OK);
+    expect(res.data.account).toEqual(TEST_ACCOUNT_ID);
+    expect(Object.keys(res.data).length).toEqual(1);
+  });
+
+  test("GET /accountSummary/account (no authorization)", async () => {
+    try {
+      await axios.get<AccountList>(
+        baseUrl + "/accountSummary/" + TEST_ACCOUNT_ID,
+        {},
+      );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 });

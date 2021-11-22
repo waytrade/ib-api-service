@@ -40,12 +40,14 @@ export class ContractsController {
   ): Promise<ContractDetailsList> {
     SecurityUtils.ensureAuthorization(req);
 
-    // get contract details
-
-    const details = await this.apiService.getContractDetails(params);
-    return {
-      details,
-    } as ContractDetailsList;
+    try {
+      const details = await this.apiService.getContractDetails(params);
+      return {
+        details,
+      } as ContractDetailsList;
+    } catch (e) {
+      throw new HttpError(HttpStatus.INTERNAL_SERVER_ERROR, (<Error>e).message);
+    }
   }
 
   @get("/details")

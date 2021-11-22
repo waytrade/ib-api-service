@@ -9,7 +9,8 @@ import {
 import LruCache from "lru-cache";
 import {
   delay,
-  firstValueFrom, Observable,
+  firstValueFrom, map,
+  Observable,
   retryWhen,
   Subject,
   Subscription,
@@ -19,9 +20,11 @@ import {
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
-import {PnL} from "../models/pnl.model";
 import {Position} from "../models/position.model";
-import {IBApiServiceHelper as Helper} from "../utils/ib.helper";
+import {
+  ACCOUNT_SUMMARY_TAGS,
+  IBApiServiceHelper as Helper
+} from "../utils/ib.helper";
 
 /**
  * Send interval on market data ticks in milliseconds.
@@ -30,44 +33,8 @@ import {IBApiServiceHelper as Helper} from "../utils/ib.helper";
  */
 const MARKET_DATA_SEND_INTERVAL_MS = 10;
 
-/**
- * Account summary tag values, make suer this is in sync with
- * AccountSummary model.
- *
- * Ecented AccountSummary model if you extend this!!
- */
-export const ACCOUNT_SUMMARY_TAGS = [
-  "AccountType",
-  "NetLiquidation",
-  "TotalCashValue",
-  "SettledCash",
-  "AccruedCash",
-  "BuyingPower",
-  "EquityWithLoanValue",
-  "PreviousEquityWithLoanValue",
-  "GrossPositionValue",
-  "RegTEquity",
-  "RegTMargin",
-  "InitMarginReq",
-  "SMA",
-  "InitMarginReq",
-  "MaintMarginReq",
-  "AvailableFunds",
-  "ExcessLiquidity",
-  "Cushion",
-  "FullInitMarginReq",
-  "FullMaintMarginReq",
-  "FullAvailableFunds",
-  "FullExcessLiquidity",
-  "LookAheadNextChange",
-  "LookAheadInitMarginReq",
-  "LookAheadMaintMarginReq",
-  "LookAheadAvailableFunds",
-  "LookAheadExcessLiquidity",
-  "HighestSeverity",
-  "DayTradesRemaining",
-  "Leverage",
-];
+/** Re-try intervall when an IB function has reported an error */
+const IB_ERROR_RETRY_INTERVAL = 1000 * 60; // 1min
 
 /** An update the positions.  */
 export class PositionsUpdate {
@@ -89,6 +56,9 @@ export class IBApiService {
   /** The [[IBApiNext]] instance. */
   private api!: IB.IBApiNext;
 
+  /** The service shutdown signal. */
+  private shutdownSignal = new Subject<void>();
+
   /** Cache of a requested contract details, with conId as key. */
   private readonly contractDetailsCache = new LruCache<
     number,
@@ -97,9 +67,27 @@ export class IBApiService {
     max: 128,
   });
 
+  /** All current account summary values. */
+  private readonly currentAccountSummaries = new MapExt<
+    string,
+    AccountSummary
+  >();
+
+  /** Account summary change subject. */
+  private readonly accountSummariesChange = new Subject<AccountSummary[]>();
+
   /** Start the service. */
   start(): void {
     this.api = this.app.ibApi;
+    setTimeout(() => {
+      this.subscribeAccountSummaries();
+      this.subscribeAccountPnL();
+    }, 50);
+  }
+
+  /** Stop the service. */
+  stop(): void {
+    this.shutdownSignal.next();
   }
 
   /** Get the contract details for contract that match the given criteria. */
@@ -121,117 +109,79 @@ export class IBApiService {
     return details;
   }
 
+
   /** Get the accounts to which the logged user has access to. */
   getManagedAccounts(): Promise<string[]> {
     return this.api.getManagedAccounts();
   }
 
-  /** Get real time daily PnL and unrealized PnL updates. */
-  getPnL(account: string): Observable<PnL> {
-    return this.api.getPnL(account) as Observable<PnL>;
+  /** Get a snapshot of the current account summaries of all accounts */
+  getAccountSummarySnapshot(account: string): AccountSummary {
+    const current = Array.from(this.currentAccountSummaries.values());
+    return (
+      current.find(v => v.account === account) ?? new AccountSummary({account})
+    );
   }
 
-  /** Observe the account summaries. */
-  get accountSummaries(): Observable<AccountSummary[]> {
-    return new Observable<AccountSummary[]>(res => {
-      let accountSummaryTags = "";
-      ACCOUNT_SUMMARY_TAGS.forEach(tag => {
-        accountSummaryTags = accountSummaryTags + tag + ",";
-      });
-      accountSummaryTags += `$LEDGER:${this.app.config.BASE_CURRENCY}`;
+  /** Get the account summary of the given account */
+  getAccountSummary(account: string): Observable<AccountSummary> {
+    return new Observable(res => {
+      // initial event
+      const current = this.currentAccountSummaries.get(account);
+      let firstSent = false;
+      if (current) {
+        const first: AccountSummary = {account};
+        Object.assign(first, current);
+        first.baseCurrency = this.app.config.BASE_CURRENCY;
+        res.next(first);
+        firstSent = true;
+      }
 
-      const cancel = new Subject<boolean>();
-      const firstEventSend = new Set<string>();
-
-      subscribeUntil(
-        cancel,
-        this.api.getAccountSummary("All", accountSummaryTags),
-        {
-          error: (error: IB.IBApiNextError) => {
-            this.app.error("getAccountSummary: " + error.error.message);
-            res.error(new Error(error.error.message));
-          },
+      // dispatch changes
+      const sub$ = this.accountSummariesChange
+        .pipe(map(v => v.find(v => v.account === account)))
+        .subscribe({
           next: update => {
-            // collect updated
-
-            const updated = new Map([
-              ...(update.changed?.entries() ?? []),
-              ...(update.added?.entries() ?? []),
-            ]);
-
-            const changed = new MapExt<string, AccountSummary>();
-            updated.forEach((tagValues, accountId) => {
-              Helper.colllectAccountSummaryTagValues(
-                accountId,
-                tagValues,
-                this.app.config.BASE_CURRENCY ?? "",
-                changed,
-              );
-
-              // add baseCurrency to first event
-              if (!firstEventSend.has(accountId)) {
-                changed.forEach(
-                  v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
-                );
-                firstEventSend.add(accountId);
-              }
-            });
-
-            // emit update event
-
-            if (changed.size) {
-              res.next(Array.from(changed.values()));
+            const current: AccountSummary = {account};
+            Object.assign(current, update);
+            if (!firstSent) {
+              current.baseCurrency = this.app.config.BASE_CURRENCY;
             }
+            res.next(update);
           },
-          complete: () => {
-            res.complete();
-          },
-        },
-      );
-
-      this.getManagedAccounts().then(managedAccount => {
-        managedAccount?.forEach(accountId => {
-          subscribeUntil(
-            cancel,
-            this.api
-              .getPnL(accountId)
-              // retry once a minute on error
-              .pipe(
-                retryWhen(errors =>
-                  errors.pipe(
-                    tap(err => {
-                      this.app.error(`${err.error.message}`);
-                    }),
-                    // re-try in 10min maybe IB has recovered
-                    delay(10000),
-                  ),
-                ),
-              ),
-            {
-              next: pnl => {
-                if (
-                  pnl.dailyPnL !== undefined ||
-                  pnl.realizedPnL !== undefined ||
-                  pnl.unrealizedPnL !== undefined
-                ) {
-                  const changedSummary: AccountSummary = {
-                    account: accountId,
-                    dailyPnL: pnl.dailyPnL,
-                    realizedPnL: pnl.realizedPnL,
-                    unrealizedPnL: pnl.unrealizedPnL,
-                  };
-                  res.next([changedSummary]);
-                }
-              },
-            },
-          );
         });
-      });
 
-      return (): void => {
-        cancel.next(true);
-        cancel.complete();
-      };
+      return (): void => sub$.unsubscribe();
+    });
+  }
+
+  /** Get a snapshot of the current account summaries of all accounts */
+  getAccountSummariesSnapshot(): AccountSummary[] {
+    const current = Array.from(this.currentAccountSummaries.values());
+    current.forEach(v => {
+      v.baseCurrency = this.app.config.BASE_CURRENCY;
+    });
+    return current;
+  }
+
+  /** Get the account summaries of all accounts */
+  getAccountSummaries(): Observable<AccountSummary[]> {
+    return new Observable(res => {
+      const first = this.getAccountSummariesSnapshot();
+      if (first.length) {
+        res.next(first);
+      }
+      const sub$ = this.accountSummariesChange.subscribe({
+        next: update => {
+          if (!first.length) {
+            update.forEach(
+              v => (v.baseCurrency = this.app.config.BASE_CURRENCY),
+            );
+          }
+          res.next(update);
+        },
+      });
+      return (): void => sub$?.unsubscribe();
     });
   }
 
@@ -510,6 +460,108 @@ export class IBApiService {
         cancel.next(true);
         cancel.complete();
       };
+    });
+  }
+
+  /** Subscribe on account summaries */
+  private subscribeAccountSummaries(): void {
+    subscribeUntil(
+      this.shutdownSignal,
+      this.api
+        .getAccountSummary(
+          "All",
+          ACCOUNT_SUMMARY_TAGS.join(",") +
+            `$LEDGER:${this.app.config.BASE_CURRENCY}`,
+        )
+        .pipe(
+          retryWhen(errors =>
+            errors.pipe(
+              tap(err => {
+                this.app.error("getAccountSummary: " + err.error.message);
+              }),
+              delay(IB_ERROR_RETRY_INTERVAL),
+            ),
+          ),
+        ),
+      {
+        next: update => {
+          // collect updated
+
+          const updated = new Map([
+            ...(update.changed?.entries() ?? []),
+            ...(update.added?.entries() ?? []),
+          ]);
+
+          const changed = new MapExt<string, AccountSummary>();
+          updated.forEach((tagValues, accountId) => {
+            Helper.colllectAccountSummaryTagValues(
+              accountId,
+              tagValues,
+              this.app.config.BASE_CURRENCY ?? "",
+              changed,
+            );
+          });
+
+          changed.forEach(changedSummary => {
+            const currentSummary = this.currentAccountSummaries.getOrAdd(
+              changedSummary.account,
+              () => new AccountSummary({account: changedSummary.account}),
+            );
+            Object.assign(currentSummary, changedSummary);
+          });
+
+          // emit update event
+
+          if (changed.size) {
+            this.accountSummariesChange.next(Array.from(changed.values()));
+          }
+        },
+      },
+    );
+  }
+
+  /** Subscribe on account PnLs */
+  private subscribeAccountPnL(): void {
+    this.getManagedAccounts().then(managedAccount => {
+      managedAccount?.forEach(accountId => {
+        subscribeUntil(
+          this.shutdownSignal,
+          this.api.getPnL(accountId).pipe(
+            retryWhen(errors =>
+              errors.pipe(
+                tap(err => {
+                  this.app.error(`getPnL(${accountId}): ${err.error.message}`);
+                }),
+                delay(IB_ERROR_RETRY_INTERVAL),
+              ),
+            ),
+          ),
+          {
+            next: pnl => {
+              if (
+                pnl.dailyPnL !== undefined ||
+                pnl.realizedPnL !== undefined ||
+                pnl.unrealizedPnL !== undefined
+              ) {
+                const changedSummary: AccountSummary = {
+                  account: accountId,
+                  dailyPnL: pnl.dailyPnL,
+                  realizedPnL: pnl.realizedPnL,
+                  unrealizedPnL: pnl.unrealizedPnL,
+                };
+
+                const currentSummary = this.currentAccountSummaries.getOrAdd(
+                  changedSummary.account,
+                  () => new AccountSummary({account: changedSummary.account}),
+                );
+                Object.assign(currentSummary, changedSummary);
+
+                this.accountSummariesChange.next([changedSummary]);
+              }
+            },
+          },
+        );
+      });
     });
   }
 }

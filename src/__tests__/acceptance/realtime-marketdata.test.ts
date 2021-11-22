@@ -201,5 +201,5 @@ describe("Test Real-time marketdata", () => {
         messagesReceived++;
       };
     });
-  });
+  }, 99999999);
 });
