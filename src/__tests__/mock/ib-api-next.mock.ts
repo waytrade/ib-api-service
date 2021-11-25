@@ -3,15 +3,13 @@ import {
   AccountSummariesUpdate,
   ConnectionState,
   Contract,
-  ContractDetails,
-  ContractDetailsUpdate,
-  IBApiNextCreationOptions,
+  ContractDetails, IBApiNextCreationOptions,
   IBApiNextError,
   Logger,
   MarketDataType,
   MarketDataUpdate,
   PnL,
-  PnLSingle,
+  PnLSingle
 } from "@stoqey/ib";
 import {BehaviorSubject, Observable, ReplaySubject, Subject} from "rxjs";
 
@@ -54,24 +52,14 @@ export class IBApiNextMock {
   readonly getContractDetailsCalled = new Subject<Contract>();
   getContractDetailsError?: IBApiNextError;
 
-  getContractDetails(contract: Contract): Observable<ContractDetailsUpdate> {
-    return new Observable<ContractDetailsUpdate>(sub => {
-      if (this.getContractDetailsError) {
-        sub.error(this.getContractDetailsError);
-        return;
-      }
-      this.getContractDetailsCalled.next(contract);
-      const details = this.contractDb.get(contract.conId ?? 0);
-      const update: ContractDetailsUpdate = {
-        all: [],
-      };
-      if (details) {
-        update.all.push(details);
-        update.added?.push(details);
-      }
-      sub.next(update);
-      sub.complete();
-    });
+  async getContractDetails(contract: Contract): Promise<ContractDetails[]> {
+    if (this.getContractDetailsError) {
+      throw this.getContractDetailsError
+    }
+
+    this.getContractDetailsCalled.next(contract);
+    const details = this.contractDb.get(contract.conId ?? 0);
+    return details ? [details] : [];
   }
 
   readonly managedAccounts = new Set<string>();

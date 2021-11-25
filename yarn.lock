@@ -1439,10 +1439,10 @@
   resolved "https://registry.yarnpkg.com/@sinonjs/text-encoding/-/text-encoding-0.7.1.tgz#8da5c6530915653f3a1f38fd5f101d8c3f8079c5"
   integrity sha512-+iTbntw2IZPb/anVDbypzfQa+ay64MW0Zo8aJ8gZPWMMK6/OubMVb6lUPMagqjOPnmtauXnFCACVl3O7ogjeqQ==
 
-"@stoqey/ib@^1.2.14":
-  version "1.2.14"
-  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.2.14.tgz#bf74087d2007caf1bd3e0a0681fc9544cda19afe"
-  integrity sha512-FBhtkVBW7cXlbaA/eZaEnRhBfpFBhaIr74sCR8ft5yMOMXLVGpDFtxfTy1VPswBUT7zkoN0fOjLNuig/b/kzpA==
+"@stoqey/ib@^1.2.16":
+  version "1.2.16"
+  resolved "https://registry.yarnpkg.com/@stoqey/ib/-/ib-1.2.16.tgz#872044ff485688e9eb0c1e5ce7c575705c8a5d9d"
+  integrity sha512-Mle/c3ggwQrxJGIQb+xBqzHXg8b2Fa8fLB1m1gDzs/9+roDeBpOx/u1PZEJbWstV37L1zZIsW2O98EKmkT8aoQ==
   dependencies:
     colors "^1.4.0"
     command-buffer "^0.1.0"

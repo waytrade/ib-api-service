@@ -4,19 +4,17 @@ import {
   inject,
   MapExt,
   service,
-  subscribeUntil,
+  subscribeUntil
 } from "@waytrade/microservice-core";
 import LruCache from "lru-cache";
 import {
   delay,
-  firstValueFrom,
-  lastValueFrom,
-  Observable,
+  firstValueFrom, Observable,
   retryWhen,
   Subject,
   Subscription,
   takeUntil,
-  tap,
+  tap
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
@@ -115,18 +113,12 @@ export class IBApiService {
       }
     }
 
-    const details = await lastValueFrom(
-      this.api?.getContractDetails(contract),
-      {
-        defaultValue: {all: []} as IB.ContractDetailsUpdate,
-      },
-    );
-
-    if (contract.conId && details.all.length) {
-      this.contractDetailsCache.set(contract.conId, details.all);
+    const details = await this.api?.getContractDetails(contract);
+    if (contract.conId && details.length) {
+      this.contractDetailsCache.set(contract.conId, details);
     }
 
-    return details.all;
+    return details;
   }
 
   /** Get the accounts to which the logged user has access to. */
