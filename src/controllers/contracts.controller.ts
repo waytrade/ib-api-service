@@ -12,7 +12,7 @@ import {
   requestBody,
   response,
   responseBody,
-  summary,
+  summary
 } from "@waytrade/microservice-core";
 import {ContractDetailsList} from "../models/contract-details.model";
 import {Contract} from "../models/contract.model";
@@ -39,15 +39,9 @@ export class ContractsController {
     params: Contract,
   ): Promise<ContractDetailsList> {
     SecurityUtils.ensureAuthorization(req);
-
-    try {
-      const details = await this.apiService.getContractDetails(params);
-      return {
-        details,
-      } as ContractDetailsList;
-    } catch (e) {
-      throw new HttpError(HttpStatus.INTERNAL_SERVER_ERROR, (<Error>e).message);
-    }
+    return {
+      details: await this.apiService.getContractDetails(params),
+    } as ContractDetailsList;
   }
 
   @get("/details")
@@ -76,12 +70,10 @@ export class ContractsController {
 
     // get contract details
 
-    const details = await this.apiService.getContractDetails({
-      conId,
-    });
-
     return {
-      details,
+      details: await this.apiService.getContractDetails({
+        conId,
+      })
     } as ContractDetailsList;
   }
 }

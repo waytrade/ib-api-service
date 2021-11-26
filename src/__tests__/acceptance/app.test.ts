@@ -1,7 +1,7 @@
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
 import {filter, firstValueFrom} from "rxjs";
-import {sleep} from "../helper/test.helper";
+import {delay} from "../helper/test.helper";
 import {IBApiApp} from "../ib-api-test-app";
 /**
  * App test code.
@@ -80,7 +80,7 @@ describe("Test App", () => {
     app.ibApi.logger?.error("Test", "This is an error log message");
     app.stop();
 
-    await sleep(100);
+    await delay(100);
     expect(logsReceived).toEqual(4);
   });
 
@@ -178,7 +178,7 @@ describe("Test App", () => {
         })
         .then(() => {
           firstValueFrom(app.appStopped).then(() => resolve());
-          sleep(3000).then(() => {
+          delay(3000).then(() => {
             app.ibApi.disconnect(); // connecton lost
             app.ibApi.connect(); // 1st re-connect try
             app.ibApi.disconnect(); // connecton lost

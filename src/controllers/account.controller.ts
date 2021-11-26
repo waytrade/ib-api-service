@@ -2,20 +2,18 @@ import {
   bearerAuth,
   controller,
   description,
-  get,
-  HttpError,
-  HttpStatus,
+  get, HttpError, HttpStatus,
   inject,
   MicroserviceRequest,
   pathParameter,
   response,
   responseBody,
-  summary,
+  summary
 } from "@waytrade/microservice-core";
 import {AccountList} from "../models/account-list.model";
 import {
   AccountSummary,
-  AccountSummaryList,
+  AccountSummaryList
 } from "../models/account-summary.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
@@ -70,15 +68,10 @@ export class AccountController {
   async getAccountSummary(req: MicroserviceRequest): Promise<AccountSummary> {
     SecurityUtils.ensureAuthorization(req);
     const paths = req.url.split("/");
-    const account = paths.length > 1 ? paths[paths.length - 1] : undefined;
-
-    if (!account) {
-      throw new HttpError(
-        HttpStatus.BAD_REQUEST,
-        "account argument is missing",
-      );
+    const summary = this.apiService.getAccountSummarySnapshot(paths[paths.length - 1]);
+    if (!summary) {
+      throw new HttpError(HttpStatus.NOT_FOUND, "Invalid account id");
     }
-
-    return this.apiService.getAccountSummarySnapshot(account);
+    return summary;
   }
 }

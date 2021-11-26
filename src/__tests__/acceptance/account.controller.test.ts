@@ -1,16 +1,19 @@
+import {AccountSummaryTagValues, AccountSummaryValue, AccountSummaryValues} from '@stoqey/ib';
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
 import {AccountList} from "../../models/account-list.model";
 import {
   AccountSummary,
-  AccountSummaryList,
+  AccountSummaryList
 } from "../../models/account-summary.model";
+import {delay} from "../helper/test.helper";
 import {IBApiApp} from "../ib-api-test-app";
 
 describe("Test Account Controller", () => {
   const TEST_USERNAME = "User" + Math.random();
   const TEST_PASSWORD = "Password" + Math.random();
   const TEST_ACCOUNT_ID = "Account" + Math.random();
+  const TEST_TOTAL_CASH = Math.random();
 
   const app = new IBApiApp();
 
@@ -27,6 +30,30 @@ describe("Test Account Controller", () => {
     app.ibApiMock.managedAccounts.add(TEST_ACCOUNT_ID);
     baseUrl = `http://127.0.0.1:${app.apiServerPort}/account`;
 
+    const values = new Map<string, AccountSummaryValues>([
+      [
+        "TotalCashValue",
+        new Map<string, AccountSummaryValue>([
+          [
+            app.config.BASE_CURRENCY ?? "",
+            {
+              value: "" + TEST_TOTAL_CASH,
+              ingressTm: Math.random(),
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    app.ibApiMock.accountSummaryUpdate.next({
+      all: new Map<string, AccountSummaryTagValues>([
+        [TEST_ACCOUNT_ID, values],
+      ]),
+      changed: new Map<string, AccountSummaryTagValues>([
+        [TEST_ACCOUNT_ID, values],
+      ]),
+    });
+
     authToken = (
       await axios.post<void>(
         `http://127.0.0.1:${app.apiServerPort}/auth/password`,
@@ -36,6 +63,8 @@ describe("Test Account Controller", () => {
         },
       )
     ).headers["authorization"] as string;
+
+    await delay(100);
   });
 
   afterAll(async () => {
@@ -71,7 +100,12 @@ describe("Test Account Controller", () => {
       },
     );
     expect(res.status).toEqual(HttpStatus.OK);
-    expect(res.data.summaries?.length).toEqual(0);
+    expect(res.data.summaries?.length).toEqual(1);
+    if (res.data.summaries) {
+      expect(res.data.summaries[0]?.account).toEqual(TEST_ACCOUNT_ID);
+      expect(res.data.summaries[0]?.baseCurrency).toEqual(app.config.BASE_CURRENCY);
+      expect(res.data.summaries[0]?.totalCashValue).toEqual(TEST_TOTAL_CASH);
+    }
   });
 
   test("GET /accountSummaries (no authorization)", async () => {
@@ -94,7 +128,24 @@ describe("Test Account Controller", () => {
     );
     expect(res.status).toEqual(HttpStatus.OK);
     expect(res.data.account).toEqual(TEST_ACCOUNT_ID);
-    expect(Object.keys(res.data).length).toEqual(1);
+    expect(res.data.baseCurrency).toEqual(app.config.BASE_CURRENCY);
+    expect(res.data.totalCashValue).toEqual(TEST_TOTAL_CASH);
+  });
+
+  test("GET /accountSummary/account (no account)", async () => {
+    try {
+      await axios.get<AccountList>(
+        baseUrl + "/accountSummary/",
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.NOT_FOUND);
+    }
   });
 
   test("GET /accountSummary/account (no authorization)", async () => {

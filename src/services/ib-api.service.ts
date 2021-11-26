@@ -116,11 +116,9 @@ export class IBApiService {
   }
 
   /** Get a snapshot of the current account summaries of all accounts */
-  getAccountSummarySnapshot(account: string): AccountSummary {
-    const current = Array.from(this.currentAccountSummaries.values());
-    return (
-      current.find(v => v.account === account) ?? new AccountSummary({account})
-    );
+  getAccountSummarySnapshot(account: string): AccountSummary | undefined {
+    console.log("getAccountSummarySnapshot("+account+") -> " + Array.from(this.currentAccountSummaries.keys()));
+    return this.currentAccountSummaries.get(account);
   }
 
   /** Get the account summary of the given account */
@@ -486,6 +484,8 @@ export class IBApiService {
       {
         next: update => {
           // collect updated
+
+          console.log("getAccountSummary ->");
 
           const updated = new Map([
             ...(update.changed?.entries() ?? []),
