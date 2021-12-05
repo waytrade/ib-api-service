@@ -149,7 +149,7 @@ export class ContractsController {
 
     try {
       return await this.apiService.getHistoricData(
-        conId, args.duration, args.barSize, args.whatToShow);
+        conId, args.endDate, args.duration, args.barSize, args.whatToShow);
     } catch (e) {
       throw new HttpError(
         HttpStatus.BAD_REQUEST,

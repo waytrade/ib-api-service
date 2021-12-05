@@ -180,7 +180,8 @@ export class IBApiService {
   /** Get historic OHLC data of a contract of a given contract ID. */
   async getHistoricData(
     conId: number,
-    durationStr: string,
+    end: string | undefined,
+    duration: string,
     barSize: BarSize,
     whatToShow: string): Promise<OHLCBars> {
     const contractDetails = (await this.getContractDetails({conId}));
@@ -190,7 +191,7 @@ export class IBApiService {
     try {
       return {
         bars: await this.api.getHistoricalData(
-          contractDetails[0].contract, undefined, durationStr,
+          contractDetails[0].contract, end, duration,
           <unknown>barSize as IB.BarSizeSetting, whatToShow, 1, 1)
       };
     } catch(e) {
