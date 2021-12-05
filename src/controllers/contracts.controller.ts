@@ -13,6 +13,8 @@ import {
 import {ContractDescriptionList} from "../models/contract-description.model";
 import {ContractDetailsList} from "../models/contract-details.model";
 import {Contract} from "../models/contract.model";
+import {HistoricDataRequestArguments} from "../models/historic-data-request.model";
+import {OHLCBars} from "../models/ohlc-bar.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
@@ -116,6 +118,41 @@ export class ContractsController {
     } catch (e) {
       throw new HttpError(
         HttpStatus.INTERNAL_SERVER_ERROR,
+        (<Error>e).message,
+      );
+    }
+  }
+
+  @post("/historicData")
+  @summary("Get historic data of a contract.")
+  @description("Get historic OHLC data of a contract of a given contract ID.")
+  @requestBody(HistoricDataRequestArguments)
+  @response(HttpStatus.BAD_REQUEST)
+  @response(HttpStatus.NOT_FOUND, "Contract not found.")
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @responseBody(OHLCBars)
+  @bearerAuth([])
+  async getHistoricData(
+    req: MicroserviceRequest,
+    args: HistoricDataRequestArguments): Promise<OHLCBars> {
+    SecurityUtils.ensureAuthorization(req);
+
+    // verify arguments
+
+    const conId = Number(args.conId);
+    if (conId === undefined || isNaN(conId)) {
+      throw new HttpError(
+        HttpStatus.BAD_REQUEST,
+        "Missing conId on HistoricDataRequestArguments",
+      );
+    }
+
+    try {
+      return await this.apiService.getHistoricData(
+        conId, args.duration, args.barSize, args.whatToShow);
+    } catch (e) {
+      throw new HttpError(
+        HttpStatus.BAD_REQUEST,
         (<Error>e).message,
       );
     }

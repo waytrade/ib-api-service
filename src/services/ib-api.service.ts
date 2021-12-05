@@ -16,7 +16,9 @@ import {
 } from "rxjs";
 import {IBApiApp} from "../app";
 import {AccountSummary} from "../models/account-summary.model";
+import {BarSize} from "../models/historic-data-request.model";
 import {MarketData} from "../models/market-data.model";
+import {OHLCBars} from "../models/ohlc-bar.model";
 import {Position} from "../models/position.model";
 import {
   ACCOUNT_SUMMARY_TAGS,
@@ -170,6 +172,27 @@ export class IBApiService {
         this.contractDetailsCache.set(contract.conId, details);
       }
       return details;
+    } catch(e) {
+      throw (<IBApiNextError>e).error;
+    }
+  }
+
+  /** Get historic OHLC data of a contract of a given contract ID. */
+  async getHistoricData(
+    conId: number,
+    durationStr: string,
+    barSize: BarSize,
+    whatToShow: string): Promise<OHLCBars> {
+    const contractDetails = (await this.getContractDetails({conId}));
+    if (!contractDetails.length) {
+      throw Error("Contract to found.");
+    }
+    try {
+      return {
+        bars: await this.api.getHistoricalData(
+          contractDetails[0].contract, undefined, durationStr,
+          <unknown>barSize as IB.BarSizeSetting, whatToShow, 1, 1)
+      };
     } catch(e) {
       throw (<IBApiNextError>e).error;
     }
