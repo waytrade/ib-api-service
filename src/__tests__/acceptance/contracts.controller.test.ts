@@ -1,11 +1,17 @@
-import {ContractDescription, ContractDetails, OptionType, SecType} from "@stoqey/ib";
+import {Bar, ContractDescription, ContractDetails, OptionType, SecType} from "@stoqey/ib";
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
 import {ContractDescriptionList} from '../../models/contract-description.model';
 import {ContractDetailsList} from "../../models/contract-details.model";
+import {BarSize, HistoricDataRequestArguments, WhatToShow} from '../../models/historic-data-request.model';
+import {OHLCBars} from '../../models/ohlc-bar.model';
 import {IBApiApp} from "../ib-api-test-app";
 
 describe("Test Contracts Controller", () => {
+  const app = new IBApiApp();
+  let authToken = "";
+  let baseUrl = "";
+
   const TEST_USERNAME = "User" + Math.random();
   const TEST_PASSWORD = "Password" + Math.random();
 
@@ -87,11 +93,36 @@ describe("Test Contracts Controller", () => {
     derivativeSecTypes: [SecType.STK, SecType.OPT]
   }
 
-
-
-  const app = new IBApiApp();
-  let authToken = "";
-  let baseUrl = "";
+  const REF_BARS: Bar[] = [{
+      time: "Time" + Math.random(),
+      open: Math.random(),
+      high: Math.random(),
+      low: Math.random(),
+      close: Math.random(),
+      volume: Math.random(),
+      WAP: Math.random(),
+      count: Math.random(),
+    }, {
+      time: "Time" + Math.random(),
+      open: Math.random(),
+      high: Math.random(),
+      low: Math.random(),
+      close: Math.random(),
+      volume: Math.random(),
+      WAP: Math.random(),
+      count: Math.random(),
+    }, {
+      time: "Time" + Math.random(),
+      open: Math.random(),
+      high: Math.random(),
+      low: Math.random(),
+      close: Math.random(),
+      volume: Math.random(),
+      WAP: Math.random(),
+      count: Math.random(),
+    }
+  ]
+  app.ibApiMock.historicalData.set(REF_CONTRACT_DETAILS.contract.conId??0, REF_BARS);
 
   beforeAll(async () => {
     await app.start({
@@ -380,6 +411,82 @@ describe("Test Contracts Controller", () => {
     } catch (e) {
       expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
       expect(e.response.data.message).toEqual("TEST ERROR");
+    }
+  });
+
+  test("POST /historicData", async () => {
+    app.ibApiMock.getContractDetailsError = undefined;
+    const res = await axios.post<OHLCBars>(
+      baseUrl + "/historicData",
+      {
+        conId: REF_CONTRACT_DETAILS.contract.conId,
+        duration: "52 W",
+        barSize: BarSize.MINUTES_FIVE,
+        whatToShow: WhatToShow.TRADES
+      } as HistoricDataRequestArguments,
+      {
+        headers: {
+          authorization: authToken,
+        },
+      },
+    );
+
+    expect(res.status).toEqual(HttpStatus.OK);
+    expect(res.data.bars).toEqual(REF_BARS);
+  });
+
+  test("POST /historicData (no authorization)", async () => {
+    try {
+      await axios.post<ContractDetailsList>(
+        baseUrl + `/historicData`,
+        {
+          conId: REF_CONTRACT_DETAILS.contract.conId,
+          duration: "52 W",
+          barSize: BarSize.MINUTES_FIVE,
+          whatToShow: WhatToShow.TRADES
+        } as HistoricDataRequestArguments,
+        {},
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+    }
+  });
+
+
+  test("POST /historicData (invalid conId)", async () => {
+    try {
+      await axios.post<ContractDetailsList>(
+        baseUrl + "/historicData",
+        {
+          conId: 0,
+        } as HistoricDataRequestArguments,
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+    }
+  });
+
+  test("POST /historicData (no conId)", async () => {
+    try {
+      await axios.post<ContractDetailsList>(
+        baseUrl + "/historicData",
+        {},
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
     }
   });
 });

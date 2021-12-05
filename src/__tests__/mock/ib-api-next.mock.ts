@@ -1,6 +1,6 @@
 import {
   AccountPositionsUpdate,
-  AccountSummariesUpdate,
+  AccountSummariesUpdate, Bar, BarSizeSetting,
   ConnectionState,
   Contract,
   ContractDescription,
@@ -125,5 +125,25 @@ export class IBApiNextMock {
     regulatorySnapshot: boolean,
   ): Observable<MarketDataUpdate> {
     return this.marketDataUpdate;
+  }
+
+  readonly historicalData = new Map<number, Bar[]>()
+
+  async getHistoricalData(
+    contract: Contract,
+    endDateTime: string | undefined,
+    durationStr: string,
+    barSizeSetting: BarSizeSetting,
+    whatToShow: string,
+    useRTH: number,
+    formatDate: number
+  ): Promise<Bar[]> {
+    const res = this.historicalData.get(contract.conId??0)
+    if (!res) {
+      throw {
+        error: new Error("conId not found")
+      }
+    }
+    return res;
   }
 }
