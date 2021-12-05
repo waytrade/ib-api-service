@@ -45,6 +45,10 @@ export class HistoricDataRequestArguments {
   @property("The contract id.")
   conId!: number;
 
+  /** Date of the end (must up to date) bar. If undefined, end date is now. */
+  @property("Date of the end (must up to date) bar. If undefined, end date is now.")
+  endDate?: string;
+
   /** The duration, in format '[n] S' (seconds), '[n] D' (days), '[n] W' (weeks), '[n] M' (months), '[n] Y' (years). */
   @property("The duration, in format '[n] S' (seconds), '[n] D' (days), '[n] W' (weeks), '[n] M' (months), '[n] Y' (years).")
   duration!: string;

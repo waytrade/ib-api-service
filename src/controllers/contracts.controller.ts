@@ -35,8 +35,6 @@ export class ContractsController {
   async searchContract(
     req: MicroserviceRequest,
   ): Promise<ContractDescriptionList> {
-    SecurityUtils.ensureAuthorization(req);
-
     const pattern = req.queryParams.pattern as string;
     if (pattern === undefined) {
       throw new HttpError(
@@ -69,8 +67,6 @@ export class ContractsController {
     req: MicroserviceRequest,
     contract: Contract,
   ): Promise<ContractDetailsList> {
-    SecurityUtils.ensureAuthorization(req);
-
     try {
       return {
         details: await this.apiService.getContractDetails(contract)
@@ -135,8 +131,6 @@ export class ContractsController {
   async getHistoricData(
     req: MicroserviceRequest,
     args: HistoricDataRequestArguments): Promise<OHLCBars> {
-    SecurityUtils.ensureAuthorization(req);
-
     // verify arguments
 
     const conId = Number(args.conId);
@@ -149,7 +143,7 @@ export class ContractsController {
 
     try {
       return await this.apiService.getHistoricData(
-        conId, args.duration, args.barSize, args.whatToShow);
+        conId, args.endDate, args.duration, args.barSize, args.whatToShow);
     } catch (e) {
       throw new HttpError(
         HttpStatus.BAD_REQUEST,
