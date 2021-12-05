@@ -1,6 +1,7 @@
-import {ContractDetails, OptionType, SecType} from "@stoqey/ib";
+import {ContractDescription, ContractDetails, OptionType, SecType} from "@stoqey/ib";
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
+import {ContractDescriptionList} from '../../models/contract-description.model';
 import {ContractDetailsList} from "../../models/contract-details.model";
 import {IBApiApp} from "../ib-api-test-app";
 
@@ -64,6 +65,30 @@ describe("Test Contracts Controller", () => {
     maturity: "20311217",
   };
 
+  const REF_CONTRACT_DESC: ContractDescription = {
+    contract: {
+      conId: REF_CONID,
+      symbol: "" + Math.random(),
+      secType: SecType.FUT,
+      lastTradeDateOrContractMonth: "20211217",
+      strike: Math.random(),
+      right: OptionType.Call,
+      multiplier: Math.random(),
+      exchange: "" + Math.random(),
+      currency: "" + Math.random(),
+      localSymbol: "" + Math.random(),
+      primaryExch: "" + Math.random(),
+      tradingClass: "" + Math.random(),
+      includeExpired: true,
+      secIdType: "" + Math.random(),
+      secId: "" + Math.random(),
+      comboLegsDescription: "" + Math.random(),
+    },
+    derivativeSecTypes: [SecType.STK, SecType.OPT]
+  }
+
+
+
   const app = new IBApiApp();
   let authToken = "";
   let baseUrl = "";
@@ -92,7 +117,94 @@ describe("Test Contracts Controller", () => {
     app.stop();
   });
 
-  test("GET /details", async () => {
+  test("POST /search", async () => {
+    app.ibApiMock.searchContractsResult.next(
+      [REF_CONTRACT_DESC]
+    )
+
+    const res = await axios.get<ContractDescriptionList>(
+      baseUrl + "/search?pattern=Apple",
+      {
+        headers: {
+          authorization: authToken,
+        },
+      },
+    );
+
+    expect(res.status).toEqual(HttpStatus.OK);
+    expect(res.data.descs?.length).toEqual(1);
+    expect(res.data.descs).toEqual([REF_CONTRACT_DESC]);
+  });
+
+  test("GET /search (no authorization)", async () => {
+    try {
+      await axios.get<ContractDescriptionList>(
+        baseUrl + "/search?pattern=Apple",
+        {},
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+    }
+  });
+
+  test("GET /search (empty result)", async () => {
+    app.ibApiMock.searchContractsResult.next(
+      []
+    )
+    const res = await axios.get<ContractDescriptionList>(
+      baseUrl +  "/search?pattern=Apple",
+      {
+        headers: {
+          authorization: authToken,
+        },
+      },
+    );
+
+    expect(res.status).toEqual(HttpStatus.OK);
+    expect(res.data.descs).toEqual([]);
+  });
+
+  test("GET /search (no pattern)", async () => {
+    try {
+      await axios.get<ContractDescriptionList>(
+        baseUrl + `/search`,
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect(e.response.data.message).toEqual("Missing pattern parameter on query");
+    }
+  });
+
+  test("GET /search (IBApiNext error)", async () => {
+    app.ibApiMock.searchContractssError = {
+      reqId: -1,
+      code: 0,
+      error: Error("TEST ERROR")
+    }
+    try {
+      await axios.get<ContractDescriptionList>(
+        baseUrl + `/search?pattern=Apple`,
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(e.response.data.message).toEqual("TEST ERROR");
+    }
+  });
+
+  test("GET /detailsById", async () => {
     // set on IBApiNext mock
     app.ibApiMock.contractDb.set(REF_CONID, REF_CONTRACT_DETAILS);
 
@@ -105,7 +217,7 @@ describe("Test Contracts Controller", () => {
 
     // query (getContractDetailsCalledCount will increment)
     const res = await axios.get<ContractDetailsList>(
-      baseUrl + `/details?conId=${REF_CONID}`,
+      baseUrl + `/detailsById?conId=${REF_CONID}`,
       {
         headers: {
           authorization: authToken,
@@ -117,7 +229,7 @@ describe("Test Contracts Controller", () => {
 
     // query again from cache  (getContractDetailsCalledCount won't increment)
     const cachedRes = await axios.get<ContractDetailsList>(
-      baseUrl + `/details?conId=${REF_CONID}`,
+      baseUrl + `/detailsById?conId=${REF_CONID}`,
       {
         headers: {
           authorization: authToken,
@@ -131,10 +243,10 @@ describe("Test Contracts Controller", () => {
     expect(getContractDetailsCalledCount).toEqual(1);
   });
 
-  test("GET /details (no authorization)", async () => {
+  test("GET /detailsById (no authorization)", async () => {
     try {
       await axios.get<ContractDetailsList>(
-        baseUrl + `/details?conId=9999999`,
+        baseUrl + `/detailsById?conId=9999999`,
         {},
       );
       throw "This must fail";
@@ -143,9 +255,9 @@ describe("Test Contracts Controller", () => {
     }
   });
 
-  test("GET /details (empty result)", async () => {
+  test("GET /detailsById (empty result)", async () => {
     const res = await axios.get<ContractDetailsList>(
-      baseUrl + `/details?conId=9999999`,
+      baseUrl + `/detailsById?conId=9999999`,
       {
         headers: {
           authorization: authToken,
@@ -157,10 +269,10 @@ describe("Test Contracts Controller", () => {
     expect(res.data.details).toEqual([]);
   });
 
-  test("GET /details (invalid conId format)", async () => {
+  test("GET /detailsById (invalid conId format)", async () => {
     try {
       await axios.get<ContractDetailsList>(
-        baseUrl + `/details?conId=thisIsNoConID`,
+        baseUrl + `/detailsById?conId=thisIsNoConID`,
         {
           headers: {
             authorization: authToken,
@@ -173,11 +285,34 @@ describe("Test Contracts Controller", () => {
     }
   });
 
-  test("POST /search", async () => {
+  test("GET /detailsById (IBApiNext error)", async () => {
+    app.ibApiMock.getContractDetailsError = {
+      reqId: -1,
+      code: 0,
+      error: Error("TEST ERROR")
+    }
+    try {
+      await axios.get<ContractDetailsList>(
+        baseUrl + `/detailsById?conId=9999999`,
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(e.response.data.message).toEqual("TEST ERROR");
+    }
+  });
+
+  test("POST /details", async () => {
+    app.ibApiMock.getContractDetailsError = undefined;
     const res = await axios.post<ContractDetailsList>(
-      baseUrl + "/search",
+      baseUrl + "/details",
       {
-        conId: REF_CONTRACT_DETAILS.contract.conId,
+        conId: REF_CONTRACT_DETAILS.contract.conId
       },
       {
         headers: {
@@ -191,9 +326,24 @@ describe("Test Contracts Controller", () => {
     expect(res.data.details).toEqual([REF_CONTRACT_DETAILS]);
   });
 
-  test("POST /search (empty result)", async () => {
+  test("GET /details (no authorization)", async () => {
+    try {
+      await axios.post<ContractDetailsList>(
+        baseUrl + `/details`,
+        {
+          conId: REF_CONTRACT_DETAILS.contract.conId
+        },
+        {},
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+    }
+  });
+
+  test("POST /details (empty result)", async () => {
     const res = await axios.post<ContractDetailsList>(
-      baseUrl + "/search",
+      baseUrl + "/details",
       {
         symbol: "" + Math.random(),
       },
@@ -206,5 +356,30 @@ describe("Test Contracts Controller", () => {
 
     expect(res.status).toEqual(HttpStatus.OK);
     expect(res.data.details?.length).toEqual(0);
+  });
+
+  test("GET /details (IBApiNext error)", async () => {
+    app.ibApiMock.getContractDetailsError = {
+      reqId: -1,
+      code: 0,
+      error: Error("TEST ERROR")
+    }
+    try {
+      await axios.post<ContractDetailsList>(
+        baseUrl + `/details`,
+        {
+          symbol: "" + Math.random(),
+        },
+        {
+          headers: {
+            authorization: authToken,
+          },
+        },
+      );
+      throw "This must fail";
+    } catch (e) {
+      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect(e.response.data.message).toEqual("TEST ERROR");
+    }
   });
 });

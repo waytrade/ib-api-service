@@ -4,11 +4,11 @@ import {
   MicroserviceRequest,
 } from "@waytrade/microservice-core";
 import Cookie from "cookie";
-import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
 /** Secret used signing JWT tokens. */
-const JWT_SECRET = crypto.randomBytes(48).toString("hex");
+//const JWT_SECRET = crypto.randomBytes(64).toString("hex");
+const JWT_SECRET = "123455678";
 
 /** Lifetime of a JWT Bearer token in seconds. */
 const JWT_TOKEN_LIFETIME = 60 * 60 * 24; // 60s * 60m * 24h = 1day

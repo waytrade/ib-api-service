@@ -2,19 +2,21 @@ import {
   bearerAuth,
   controller,
   description,
-  get,
-  HttpError,
-  HttpStatus,
+  get, HttpError, HttpStatus,
   inject,
   MicroserviceRequest,
-  queryParameter,
+  pathParameter,
   response,
   responseBody,
-  summary,
+  summary
 } from "@waytrade/microservice-core";
 import {firstValueFrom} from "rxjs";
 import {AccountList} from "../models/account-list.model";
-import {PnL} from "../models/pnl.model";
+import {
+  AccountSummary,
+  AccountSummaryList
+} from "../models/account-summary.model";
+import {PositionList} from "../models/position-list.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
@@ -32,32 +34,66 @@ export class AccountController {
   @bearerAuth([])
   async getManagedAccounts(req: MicroserviceRequest): Promise<AccountList> {
     SecurityUtils.ensureAuthorization(req);
-
-    const accounts = await this.apiService.getManagedAccounts();
     return {
-      accounts: accounts,
+      accounts: await this.apiService.managedAccounts,
     };
   }
 
-  @get("/pnl")
-  @summary("Get the Profit&Loss of an account.")
-  @description("Get a snapshot of the current Profit&Loss on a given account.")
-  @queryParameter("account", String, true, "The IB account ID.")
-  @response(HttpStatus.BAD_REQUEST)
+  @get("/accountSummaries")
+  @summary("Get a snapshot the account summaries.")
+  @description(
+    "Get a snapshot of the account summaries of all managed accounts.</br> " +
+      "Use Real-time Data endpoint for receiving realtime updates.",
+  )
   @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
-  @responseBody(PnL)
+  @responseBody(AccountSummaryList)
   @bearerAuth([])
-  async getPnL(req: MicroserviceRequest): Promise<PnL> {
+  async getAccountSummaries(
+    req: MicroserviceRequest,
+  ): Promise<AccountSummaryList> {
     SecurityUtils.ensureAuthorization(req);
+    return {
+      summaries: await firstValueFrom(this.apiService.accountSummaries)
+    };
+  }
 
-    const account = req.queryParams.account as string;
-    if (account === undefined) {
-      throw new HttpError(
-        HttpStatus.BAD_REQUEST,
-        "Missing account parameter on query",
-      );
+  @get("/accountSummary/{account}")
+  @pathParameter("account", String, "The account id")
+  @summary("Get a snapshot of a account summary.")
+  @description(
+    "Get a snapshot of the current account summary of a given account.</br> " +
+      "Use Real-time Data endpoint for receiving realtime updates.",
+  )
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @responseBody(AccountSummary)
+  @bearerAuth([])
+  async getAccountSummary(req: MicroserviceRequest): Promise<AccountSummary> {
+    SecurityUtils.ensureAuthorization(req);
+    const paths = req.url.split("/");
+    const summary = await firstValueFrom(
+      this.apiService.getAccountSummary(paths[paths.length - 1])
+    );
+
+    if (!summary || !summary.baseCurrency) {
+      throw new HttpError(HttpStatus.NOT_FOUND, "Invalid account id");
     }
 
-    return await firstValueFrom(this.apiService.getPnL(account));
+    return summary;
+  }
+
+  @get("/positions")
+  @summary("Get a snapshot of all open positions.")
+  @description(
+    "Get a snapshot of all open positions on all managed accounts.</br> " +
+      "Use Real-time Data endpoint for receiving realtime updates.",
+  )
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @responseBody(PositionList)
+  @bearerAuth([])
+  async getPositions(req: MicroserviceRequest): Promise<PositionList> {
+    SecurityUtils.ensureAuthorization(req);
+    return {
+      positions: ((await firstValueFrom(this.apiService.positions))?.changed) ?? []
+    };
   }
 }

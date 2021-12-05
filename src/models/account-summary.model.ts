@@ -1,4 +1,4 @@
-import {model, property} from "@waytrade/microservice-core";
+import {arrayProperty, model, property} from "@waytrade/microservice-core";
 
 /**
  * An account summary.
@@ -198,4 +198,13 @@ export class AccountSummary {
   /** The daily realized PnL. */
   @property("The daily realized PnL.")
   realizedPnL?: number;
+}
+
+/**
+ * An account summary.
+ */
+@model("A list of account sumarries")
+export class AccountSummaryList {
+  @arrayProperty(AccountSummary, "The account summaries")
+  summaries?: AccountSummary[];
 }

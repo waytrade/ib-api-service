@@ -9,18 +9,18 @@ import {
   queryParameter,
   responseBody,
   summary,
-  websocket,
+  websocket
 } from "@waytrade/microservice-core";
 import {
   WaytradeEventMessage,
-  WaytradeEventMessageType,
+  WaytradeEventMessageType
 } from "@waytrade/microservice-core/dist/vendor/waytrade";
 import {firstValueFrom, Subject, Subscription} from "rxjs";
 import {
   RealtimeDataError,
   RealtimeDataMessage,
   RealtimeDataMessagePayload,
-  RealtimeDataMessageType,
+  RealtimeDataMessageType
 } from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
@@ -77,6 +77,7 @@ export class RealtimeDataController {
       "To unsubscribe from a message topic, send a LiveDataMessage with a valid topic attribute and type='unsubscribe'</br>" +
       "</br>Avaiable message topics:</br><ul>" +
       "<li>accountSummary/#</li>" +
+      "<li>accountSummary/&lt;account&lt;</li>" +
       "<li>position/#</li>" +
       "<li>marketdata/&lt;conId&gt;</li>" +
       "</ul>",
@@ -203,34 +204,40 @@ export class RealtimeDataController {
     // account summariies
     if (topicTokens[0] === "accountSummary") {
       const accountId = topicTokens[1];
-      if (accountId !== "#") {
-        sendError(stream, topic, {
-          code: HttpStatus.BAD_REQUEST,
-          desc: "invalid topic, only 'accountSummary/#' wildcard supported",
-        });
+
+      if (!accountId) {
+        handleSubscriptionError("invalid topic, account argument missing");
         return;
       }
 
-      sub$ = this.apiService.accountSummaries.subscribe({
-        next: update => {
-          update.forEach(summary => {
-            sendReponse(stream, topicTokens[0] + "/" + summary.account, {
-              accountSummary: summary,
+      if (accountId == "#") {
+        sub$ = this.apiService.accountSummaries.subscribe({
+          next: update => {
+            update.forEach(summary => {
+              sendReponse(stream, topicTokens[0] + "/" + summary.account, {
+                accountSummary: summary,
+              });
             });
-          });
-        },
-        error: err => handleSubscriptionError((<Error>err).message),
-      });
+          }
+        });
+      } else {
+        sub$ = this.apiService.getAccountSummary(accountId).subscribe({
+          next: update => {
+            sendReponse(stream, topicTokens[0] + "/" + accountId, {
+              accountSummary: update,
+            });
+          }
+        });
+      }
     }
 
     // position
     else if (topicTokens[0] === "position") {
       const posId = topicTokens[1];
       if (posId !== "#") {
-        sendError(stream, topic, {
-          code: HttpStatus.BAD_REQUEST,
-          desc: "invalid topic, only 'position/#' wildcard supported",
-        });
+        handleSubscriptionError(
+          "invalid topic, only 'position/#' wildcard supported",
+        );
         return;
       }
 
@@ -250,8 +257,7 @@ export class RealtimeDataController {
               RealtimeDataMessageType.Unpublish,
             );
           });
-        },
-        error: err => handleSubscriptionError((<Error>err).message),
+        }
       });
     }
 

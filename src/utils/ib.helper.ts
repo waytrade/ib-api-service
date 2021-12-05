@@ -2,7 +2,45 @@ import * as IB from "@stoqey/ib";
 import {MapExt} from "@waytrade/microservice-core";
 import {AccountSummary} from "../models/account-summary.model";
 import {MarketData} from "../models/market-data.model";
-import {ACCOUNT_SUMMARY_TAGS} from "../services/ib-api.service";
+
+/**
+ * Account summary tag values, make suer this is in sync with
+ * AccountSummary model.
+ *
+ * Ecented AccountSummary model if you extend this!!
+ */
+export const ACCOUNT_SUMMARY_TAGS = [
+  "AccountType",
+  "NetLiquidation",
+  "TotalCashValue",
+  "SettledCash",
+  "AccruedCash",
+  "BuyingPower",
+  "EquityWithLoanValue",
+  "PreviousEquityWithLoanValue",
+  "GrossPositionValue",
+  "RegTEquity",
+  "RegTMargin",
+  "InitMarginReq",
+  "SMA",
+  "InitMarginReq",
+  "MaintMarginReq",
+  "AvailableFunds",
+  "ExcessLiquidity",
+  "Cushion",
+  "FullInitMarginReq",
+  "FullMaintMarginReq",
+  "FullAvailableFunds",
+  "FullExcessLiquidity",
+  "LookAheadNextChange",
+  "LookAheadInitMarginReq",
+  "LookAheadMaintMarginReq",
+  "LookAheadAvailableFunds",
+  "LookAheadExcessLiquidity",
+  "HighestSeverity",
+  "DayTradesRemaining",
+  "Leverage",
+];
 
 /**
  * Collection of helper functions used by IBApiService.

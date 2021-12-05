@@ -45,23 +45,3 @@ export class Position {
   @property("The current market value of the position.")
   marketValue?: number;
 }
-
-/**
- * A Webhook callback subscription on the positions.
- */
-@model("A Webhook callback subscription on the positions.")
-export class PositionsCallbackSubscription {
-  /**The hostname of the callback server. */
-  @property(
-    "The hostname of the callback server. The connection peer address will be used if not specified.",
-  )
-  host?: string;
-
-  /**The port number of the callback server. */
-  @property("The port number of the callback server.")
-  port?: number;
-
-  /** The callback url. */
-  @property("The callback url.")
-  callbackUrl?: string;
-}
