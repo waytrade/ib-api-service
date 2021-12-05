@@ -43,7 +43,7 @@
     "@types/lru-cache": "^5.1.0",
     "@types/pino": "^6.3.12",
     "@types/ws": "^8.2.0",
-    "@waytrade/microservice-core": "^0.9.79",
+    "@waytrade/microservice-core": "^0.9.80",
     "cookie": "^0.4.1",
     "jsonwebtoken": "^8.5.1",
     "lru-cache": "^6.0.0",

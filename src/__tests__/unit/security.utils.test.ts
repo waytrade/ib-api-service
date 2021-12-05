@@ -54,7 +54,7 @@ describe("Test SecurityUtils", () => {
     } catch (e) {
       expect(e.code).toEqual(HttpStatus.UNAUTHORIZED);
       expect(e.message).toEqual(
-        "Invalid authorization header value (must be a Bearer token)",
+        "Invalid bearer token",
       );
       hasThrown = true;
     }
@@ -73,7 +73,7 @@ describe("Test SecurityUtils", () => {
       });
     } catch (e) {
       expect(e.code).toEqual(HttpStatus.UNAUTHORIZED);
-      expect(e.message).toEqual("jwt malformed");
+      expect(e.message).toEqual("Invalid bearer token");
       hasThrown = true;
     }
 

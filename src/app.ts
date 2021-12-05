@@ -8,6 +8,7 @@ import {RealtimeDataController} from "./controllers/realtime-data.controller";
 import {AuthenticationService} from "./services/authentication.service";
 import {IBApiFactoryService} from "./services/ib-api-factory.service";
 import {IBApiService} from "./services/ib-api.service";
+import {SecurityUtils} from "./utils/security.utils";
 
 /**
  * The Interactive Brokers TWS API service App.
@@ -37,4 +38,9 @@ export class IBApiApp extends MicroserviceApp<IBApiServiceConfig> {
   onStarted(): void {
     this.info(`ib-api-service is running at port ${this.config.SERVER_PORT}`);
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected onVerifyBearerAuth = (token: string, scopes: string[]): boolean => {
+    return SecurityUtils.vefiyBearer(token);
+  };
 }

@@ -1747,12 +1747,14 @@
     "@typescript-eslint/types" "5.3.0"
     eslint-visitor-keys "^3.0.0"
 
-"@waytrade/microservice-core@^0.9.79":
-  version "0.9.79"
-  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.79/611862cdc70c2138fd159355e0170b11cac9b76f5b0ac87f773b962e5ab80859#3b8cd632e424e0de939f631afc9dccf70b46e325"
-  integrity sha512-aRgxDqIG8dAwM81akXIJrOeFdCnunoVxL+eyBGtfzCqZ821z3DrMcc7erYe2sdYY1oT2ADEK+WUfMQCA+mitoQ==
+"@waytrade/microservice-core@^0.9.80":
+  version "0.9.80"
+  resolved "https://npm.pkg.github.com/download/@waytrade/microservice-core/0.9.80/1d95a4a9b5039bfe21d5aee0c4c2349ade3c37641969882cc15bc41ac112825e#6c1bae3117a1ea16db8bf23325e9c54a2c664839"
+  integrity sha512-7YWaZDG53EceGV48ce/QrNAOtE3mLgLCdn1shrxUSfZ8pXL8Fcx+SjPGzpUqpDw4Tuhe6DdlKnrICe6aoyDErA==
   dependencies:
+    "@types/cookie" "^0.4.1"
     axios "^0.21.1"
+    cookie "^0.4.1"
     dotenv "^10.0.0"
     http-status "^1.5.0"
     openapi3-ts "^2.0.1"
@@ -1762,7 +1764,7 @@
     rxjs "^7.3.0"
     swagger-ui-dist "^3.51.1"
     tslib "^2.3.0"
-    uWebSockets.js uNetworking/uWebSockets.js#v19.3.0
+    uWebSockets.js uNetworking/uWebSockets.js#v20.4.0
     ws "^8.1.0"
 
 abab@^2.0.3, abab@^2.0.5:
@@ -5232,9 +5234,9 @@ typescript@~4.3.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
   integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
 
-"uWebSockets.js@github:uNetworking/uWebSockets.js#v19.3.0":
-  version "19.3.0"
-  resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/7bf0faac5859fef2d113e83d22803f7833774c11"
+"uWebSockets.js@github:uNetworking/uWebSockets.js#v20.4.0":
+  version "20.4.0"
+  resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/65f39bdff763be3883e6cf18e433dd4fec155845"
 
 unbox-primitive@^1.0.1:
   version "1.0.1"

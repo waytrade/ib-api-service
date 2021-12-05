@@ -1,17 +1,17 @@
 import {
   HttpError,
   HttpStatus,
-  MicroserviceRequest,
+  MicroserviceRequest
 } from "@waytrade/microservice-core";
 import Cookie from "cookie";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
 /** Secret used signing JWT tokens. */
-//const JWT_SECRET = crypto.randomBytes(64).toString("hex");
-const JWT_SECRET = "123455678";
+const JWT_SECRET = crypto.randomBytes(64).toString("hex");
 
 /** Lifetime of a JWT Bearer token in seconds. */
-const JWT_TOKEN_LIFETIME = 60 * 60 * 24; // 60s * 60m * 24h = 1day
+const JWT_TOKEN_LIFETIME = 60 * 60 * 48; // 48h
 
 /**
  * Collection of security-related helper functions.
@@ -25,6 +25,19 @@ export class SecurityUtils {
       },
       JWT_SECRET,
     );
+  }
+
+  /*
+   * Verify that authorization headers contains a valid JWT token, signed
+   * by this service instance.
+   */
+  static vefiyBearer(token: string): boolean {
+    try {
+      jwt.verify(token.substr("Bearer ".length), JWT_SECRET);
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -51,19 +64,11 @@ export class SecurityUtils {
       );
     }
 
-    if (!bearerToken.startsWith("Bearer ")) {
+    if (!this.vefiyBearer(bearerToken)) {
       throw new HttpError(
         HttpStatus.UNAUTHORIZED,
-        "Invalid authorization header value (must be a Bearer token)",
+        "Invalid bearer token",
       );
-    }
-
-    // verify the JWT
-
-    try {
-      jwt.verify(bearerToken.substr("Bearer ".length), JWT_SECRET);
-    } catch (e) {
-      throw new HttpError(HttpStatus.UNAUTHORIZED, (<Error>e).message);
     }
   }
 }
