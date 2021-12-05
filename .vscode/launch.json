@@ -30,6 +30,7 @@
         "--verbose",
         "--maxConcurrency=1",
         "--no-cache",
+        "--detectOpenHandles",
         "-i"
       ],
       "console": "internalConsole",

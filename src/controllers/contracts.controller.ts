@@ -6,14 +6,11 @@ import {
   HttpError,
   HttpStatus,
   inject,
-  MicroserviceRequest,
-  post,
-  queryParameter,
-  requestBody,
-  response,
+  MicroserviceRequest, post, queryParameter, requestBody, response,
   responseBody,
   summary
 } from "@waytrade/microservice-core";
+import {ContractDescriptionList} from "../models/contract-description.model";
 import {ContractDetailsList} from "../models/contract-details.model";
 import {Contract} from "../models/contract.model";
 import {IBApiService} from "../services/ib-api.service";
@@ -25,27 +22,67 @@ export class ContractsController {
   @inject("IBApiService")
   private apiService!: IBApiService;
 
-  //
-  // REST functions
-  //
-
-  @post("/search")
-  @summary("Search contract details.")
-  @description("Search for contract details that match the given criteria")
-  @requestBody(Contract)
-  @responseBody(ContractDetailsList)
+  @get("/search")
+  @summary("Search contracts.")
+  @description("Search contracts where name or symbol matches the given text pattern.")
+  @queryParameter("pattern", String, true, "The  text pattern.")
+  @responseBody(ContractDescriptionList)
+  @response(HttpStatus.BAD_REQUEST)
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @bearerAuth([])
   async searchContract(
     req: MicroserviceRequest,
-    params: Contract,
-  ): Promise<ContractDetailsList> {
+  ): Promise<ContractDescriptionList> {
     SecurityUtils.ensureAuthorization(req);
-    return {
-      details: await this.apiService.getContractDetails(params),
-    } as ContractDetailsList;
+
+    const pattern = req.queryParams.pattern as string;
+    if (pattern === undefined) {
+      throw new HttpError(
+        HttpStatus.BAD_REQUEST,
+        "Missing pattern parameter on query",
+      );
+    }
+
+    try {
+      return {
+        descs: await this.apiService.searchContracts(pattern)
+      } as ContractDescriptionList;
+    } catch (e) {
+      throw new HttpError(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        (<Error>e).message,
+      );
+    }
   }
 
-  @get("/details")
+  @post("/details")
   @summary("Get contract details.")
+  @description("Get the contract details of a given contract ID.")
+  @response(HttpStatus.BAD_REQUEST)
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @requestBody(Contract)
+  @responseBody(ContractDetailsList)
+  @bearerAuth([])
+  async getContractDetails(
+    req: MicroserviceRequest,
+    contract: Contract,
+  ): Promise<ContractDetailsList> {
+    SecurityUtils.ensureAuthorization(req);
+
+    try {
+      return {
+        details: await this.apiService.getContractDetails(contract)
+      } as ContractDetailsList;
+    } catch (e) {
+      throw new HttpError(
+        HttpStatus.BAD_REQUEST,
+        (<Error>e).message,
+      );
+    }
+  }
+
+  @get("/detailsById")
+  @summary("Get contract details by conId.")
   @description("Get the contract details of a given contract ID.")
   @queryParameter("conId", Number, true, "The IB contract ID.")
   @response(HttpStatus.BAD_REQUEST)
@@ -53,7 +90,7 @@ export class ContractsController {
   @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
   @responseBody(ContractDetailsList)
   @bearerAuth([])
-  async getContractDetails(
+  async getContractDetailsById(
     req: MicroserviceRequest,
   ): Promise<ContractDetailsList> {
     SecurityUtils.ensureAuthorization(req);
@@ -70,10 +107,17 @@ export class ContractsController {
 
     // get contract details
 
-    return {
-      details: await this.apiService.getContractDetails({
-        conId,
-      })
-    } as ContractDetailsList;
+    try {
+      return {
+        details: await this.apiService.getContractDetails({
+          conId,
+        })
+      } as ContractDetailsList;
+    } catch (e) {
+      throw new HttpError(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        (<Error>e).message,
+      );
+    }
   }
 }

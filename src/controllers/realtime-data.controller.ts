@@ -9,18 +9,18 @@ import {
   queryParameter,
   responseBody,
   summary,
-  websocket,
+  websocket
 } from "@waytrade/microservice-core";
 import {
   WaytradeEventMessage,
-  WaytradeEventMessageType,
+  WaytradeEventMessageType
 } from "@waytrade/microservice-core/dist/vendor/waytrade";
 import {firstValueFrom, Subject, Subscription} from "rxjs";
 import {
   RealtimeDataError,
   RealtimeDataMessage,
   RealtimeDataMessagePayload,
-  RealtimeDataMessageType,
+  RealtimeDataMessageType
 } from "../models/realtime-data-message.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
@@ -211,15 +211,14 @@ export class RealtimeDataController {
       }
 
       if (accountId == "#") {
-        sub$ = this.apiService.getAccountSummaries().subscribe({
+        sub$ = this.apiService.accountSummaries.subscribe({
           next: update => {
             update.forEach(summary => {
               sendReponse(stream, topicTokens[0] + "/" + summary.account, {
                 accountSummary: summary,
               });
             });
-          },
-          error: err => handleSubscriptionError((<Error>err).message),
+          }
         });
       } else {
         sub$ = this.apiService.getAccountSummary(accountId).subscribe({
@@ -227,8 +226,7 @@ export class RealtimeDataController {
             sendReponse(stream, topicTokens[0] + "/" + accountId, {
               accountSummary: update,
             });
-          },
-          error: err => handleSubscriptionError((<Error>err).message),
+          }
         });
       }
     }
@@ -259,8 +257,7 @@ export class RealtimeDataController {
               RealtimeDataMessageType.Unpublish,
             );
           });
-        },
-        error: err => handleSubscriptionError((<Error>err).message),
+        }
       });
     }
 

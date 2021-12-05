@@ -6,7 +6,7 @@ import {ReplaySubject} from "rxjs";
 import WebSocket from "ws";
 import {
   RealtimeDataMessage,
-  RealtimeDataMessageType,
+  RealtimeDataMessageType
 } from "../../models/realtime-data-message.model";
 import {IBApiApp} from "../ib-api-test-app";
 
@@ -201,5 +201,5 @@ describe("Test Real-time marketdata", () => {
         messagesReceived++;
       };
     });
-  }, 99999999);
+  });
 });

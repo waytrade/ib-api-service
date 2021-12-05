@@ -3,6 +3,7 @@ import {
   AccountSummariesUpdate,
   ConnectionState,
   Contract,
+  ContractDescription,
   ContractDetails, IBApiNextCreationOptions,
   IBApiNextError,
   Logger,
@@ -11,7 +12,7 @@ import {
   PnL,
   PnLSingle
 } from "@stoqey/ib";
-import {BehaviorSubject, Observable, ReplaySubject, Subject} from "rxjs";
+import {BehaviorSubject, firstValueFrom, Observable, ReplaySubject, Subject} from "rxjs";
 
 /**
  * Mock implementation for @stoqey/ib's IBApiNext that will
@@ -48,6 +49,16 @@ export class IBApiNextMock {
     return this;
   }
 
+  readonly searchContractsResult = new ReplaySubject<ContractDescription[]>(1);
+  searchContractssError?: IBApiNextError;
+
+  searchContracts(pattern: string): Promise<ContractDescription[]> {
+    if (this.searchContractssError) {
+      throw this.searchContractssError
+    }
+    return firstValueFrom(this.searchContractsResult);
+  }
+
   readonly contractDb = new Map<number, ContractDetails>();
   readonly getContractDetailsCalled = new Subject<Contract>();
   getContractDetailsError?: IBApiNextError;
@@ -80,12 +91,7 @@ export class IBApiNextMock {
   currentPnL = new BehaviorSubject<PnL>({});
 
   getPnL(account: string, model?: string): Observable<PnL> {
-    return new Observable<PnL>(res => {
-      this.currentPnL.subscribe({
-        next: v => res.next(v),
-        error: err => res.error(err),
-      });
-    });
+    return this.currentPnL;
   }
 
   currentPositionsUpdate = new ReplaySubject<AccountPositionsUpdate>(1);
@@ -94,14 +100,14 @@ export class IBApiNextMock {
     return this.currentPositionsUpdate;
   }
 
-  currentPnLSingle = new ReplaySubject<PnLSingle>(1);
+  currentPnLSingle = new Map<number, Subject<PnLSingle>>();
 
   getPnLSingle(
     account: string,
     modelCode: string,
     conId: number,
   ): Observable<PnLSingle> {
-    return this.currentPnLSingle;
+    return this.currentPnLSingle.get(conId) ?? new ReplaySubject<PnLSingle>(1)
   }
 
   readonly setMarketDataTypeCalled = new ReplaySubject<MarketDataType>(1);

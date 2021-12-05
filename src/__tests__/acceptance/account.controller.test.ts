@@ -1,11 +1,13 @@
-import {AccountSummaryTagValues, AccountSummaryValue, AccountSummaryValues} from '@stoqey/ib';
+import {AccountSummaryTagValues, AccountSummaryValue, AccountSummaryValues, PnLSingle, Position} from '@stoqey/ib';
 import {HttpStatus} from "@waytrade/microservice-core";
 import axios from "axios";
+import {BehaviorSubject} from 'rxjs';
 import {AccountList} from "../../models/account-list.model";
 import {
   AccountSummary,
   AccountSummaryList
 } from "../../models/account-summary.model";
+import {PositionList} from '../../models/position-list.model';
 import {delay} from "../helper/test.helper";
 import {IBApiApp} from "../ib-api-test-app";
 
@@ -20,6 +22,64 @@ describe("Test Account Controller", () => {
   let authToken = "";
   let baseUrl = "";
 
+  app.ibApiMock.managedAccounts.add(TEST_ACCOUNT_ID);
+
+  const POSITION0: Position = {
+    account: TEST_ACCOUNT_ID,
+    pos: Math.random(),
+    avgCost: Math.random(),
+    contract: {
+      conId: Math.random(),
+    },
+  };
+  const POSITION0_ID = POSITION0.account + ":" + POSITION0.contract.conId;
+
+  const POSITION1: Position = {
+    account: TEST_ACCOUNT_ID,
+    pos: Math.random() + 10,
+    avgCost: Math.random() + 10,
+    contract: {
+      conId: Math.random(),
+    },
+  };
+  const POSITION1_ID = POSITION1.account + ":" + POSITION1.contract.conId;
+
+  const POSITIONS: Position[] = [
+    POSITION0,
+    POSITION1
+  ];
+
+  const positionsMap = new Map<string, Position[]>();
+  positionsMap.set(TEST_ACCOUNT_ID, POSITIONS);
+  app.ibApiMock.currentPositionsUpdate.next({
+    all: positionsMap,
+    added: positionsMap,
+  });
+
+  let PNL0: PnLSingle = {
+    position: POSITION0.pos,
+    marketValue: Math.random(),
+    dailyPnL: Math.random(),
+    unrealizedPnL: Math.random(),
+    realizedPnL: Math.random(),
+  };
+  let PNL1: PnLSingle = {
+    position: POSITION1.pos,
+    marketValue: Math.random(),
+    dailyPnL: Math.random(),
+    unrealizedPnL: Math.random(),
+    realizedPnL: Math.random(),
+  };
+
+  app.ibApiMock.currentPnLSingle.set(
+    POSITION0.contract.conId??0,
+    new BehaviorSubject<PnLSingle>(PNL0)
+  );
+  app.ibApiMock.currentPnLSingle.set(
+    POSITION1.contract.conId??0,
+    new BehaviorSubject<PnLSingle>(PNL1)
+  );
+
   beforeAll(async () => {
     await app.start({
       SERVER_PORT: undefined,
@@ -27,7 +87,6 @@ describe("Test Account Controller", () => {
       REST_API_PASSWORD: TEST_PASSWORD,
     });
 
-    app.ibApiMock.managedAccounts.add(TEST_ACCOUNT_ID);
     baseUrl = `http://127.0.0.1:${app.apiServerPort}/account`;
 
     const values = new Map<string, AccountSummaryValues>([
@@ -157,6 +216,39 @@ describe("Test Account Controller", () => {
       throw "This must fail";
     } catch (e) {
       expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+    }
+  });
+
+  test("GET /positions", async () => {
+    const res = await axios.get<PositionList>(
+      baseUrl + "/positions",
+      {
+        headers: {
+          authorization: authToken,
+        },
+      },
+    );
+    expect(res.status).toEqual(HttpStatus.OK);
+    expect(res.data.positions?.length).toEqual(2);
+    if (res.data.positions) {
+      expect(res.data.positions[0]?.id).toEqual(POSITION0_ID);
+      expect(res.data.positions[0]?.account).toEqual(TEST_ACCOUNT_ID);
+      expect(res.data.positions[0]?.conId).toEqual(POSITION0.contract.conId);
+      expect(res.data.positions[0]?.pos).toEqual(POSITION0.pos);
+      expect(res.data.positions[0]?.dailyPnL).toEqual(PNL0.dailyPnL);
+      expect(res.data.positions[0]?.unrealizedPnL).toEqual(PNL0.unrealizedPnL);
+      expect(res.data.positions[0]?.realizedPnL).toEqual(PNL0.realizedPnL);
+      expect(res.data.positions[0]?.avgCost).toEqual(POSITION0.avgCost);
+      expect(res.data.positions[0]?.marketValue).toEqual(PNL0.marketValue);
+      expect(res.data.positions[1]?.id).toEqual(POSITION1_ID);
+      expect(res.data.positions[1]?.account).toEqual(TEST_ACCOUNT_ID);
+      expect(res.data.positions[1]?.conId).toEqual(POSITION1.contract.conId);
+      expect(res.data.positions[1]?.pos).toEqual(POSITION1.pos);
+      expect(res.data.positions[1]?.dailyPnL).toEqual(PNL1.dailyPnL);
+      expect(res.data.positions[1]?.unrealizedPnL).toEqual(PNL1.unrealizedPnL);
+      expect(res.data.positions[1]?.realizedPnL).toEqual(PNL1.realizedPnL);
+      expect(res.data.positions[1]?.avgCost).toEqual(POSITION1.avgCost);
+      expect(res.data.positions[1]?.marketValue).toEqual(PNL1.marketValue);
     }
   });
 });

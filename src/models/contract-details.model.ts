@@ -118,3 +118,5 @@ export class ContractDetailsList {
   @arrayProperty(ContractDetails, "Array of contract details")
   details?: ContractDetails[];
 }
+
+

@@ -10,11 +10,13 @@ import {
   responseBody,
   summary
 } from "@waytrade/microservice-core";
+import {firstValueFrom} from "rxjs";
 import {AccountList} from "../models/account-list.model";
 import {
   AccountSummary,
   AccountSummaryList
 } from "../models/account-summary.model";
+import {PositionList} from "../models/position-list.model";
 import {IBApiService} from "../services/ib-api.service";
 import {SecurityUtils} from "../utils/security.utils";
 
@@ -33,7 +35,7 @@ export class AccountController {
   async getManagedAccounts(req: MicroserviceRequest): Promise<AccountList> {
     SecurityUtils.ensureAuthorization(req);
     return {
-      accounts: await this.apiService.getManagedAccounts(),
+      accounts: await this.apiService.managedAccounts,
     };
   }
 
@@ -51,7 +53,7 @@ export class AccountController {
   ): Promise<AccountSummaryList> {
     SecurityUtils.ensureAuthorization(req);
     return {
-      summaries: this.apiService.getAccountSummariesSnapshot(),
+      summaries: await firstValueFrom(this.apiService.accountSummaries)
     };
   }
 
@@ -68,10 +70,30 @@ export class AccountController {
   async getAccountSummary(req: MicroserviceRequest): Promise<AccountSummary> {
     SecurityUtils.ensureAuthorization(req);
     const paths = req.url.split("/");
-    const summary = this.apiService.getAccountSummarySnapshot(paths[paths.length - 1]);
-    if (!summary) {
+    const summary = await firstValueFrom(
+      this.apiService.getAccountSummary(paths[paths.length - 1])
+    );
+
+    if (!summary || !summary.baseCurrency) {
       throw new HttpError(HttpStatus.NOT_FOUND, "Invalid account id");
     }
+
     return summary;
+  }
+
+  @get("/positions")
+  @summary("Get a snapshot of all open positions.")
+  @description(
+    "Get a snapshot of all open positions on all managed accounts.</br> " +
+      "Use Real-time Data endpoint for receiving realtime updates.",
+  )
+  @response(HttpStatus.UNAUTHORIZED, "Missing or invalid authorization header.")
+  @responseBody(PositionList)
+  @bearerAuth([])
+  async getPositions(req: MicroserviceRequest): Promise<PositionList> {
+    SecurityUtils.ensureAuthorization(req);
+    return {
+      positions: ((await firstValueFrom(this.apiService.positions))?.changed) ?? []
+    };
   }
 }

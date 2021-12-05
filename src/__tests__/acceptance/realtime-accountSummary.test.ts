@@ -1,14 +1,17 @@
 import {
+  AccountSummariesUpdate,
   AccountSummaryTagValues,
   AccountSummaryValue,
   AccountSummaryValues,
+  PnL
 } from "@stoqey/ib";
 import {MapExt} from "@waytrade/microservice-core";
 import axios from "axios";
+import {BehaviorSubject, ReplaySubject} from 'rxjs';
 import WebSocket from "ws";
 import {
   RealtimeDataMessage,
-  RealtimeDataMessageType,
+  RealtimeDataMessageType
 } from "../../models/realtime-data-message.model";
 import {IBApiApp} from "../ib-api-test-app";
 
@@ -25,17 +28,17 @@ describe("Test Real-time accountSummaries", () => {
   const TEST_ACCOUNT = "DU1233445";
   let TEST_NAV = Math.random();
   let TEST_TOTAL_CASH = Math.random();
-  const TEST_REALIZED_PNL = Math.random();
-  const TEST_UNREALIZED_PNL = Math.random();
+  let TEST_REALIZED_PNL = Math.random();
+  let TEST_UNREALIZED_PNL = Math.random();
 
   beforeAll(async () => {
+    app.ibApiMock.managedAccounts.add(TEST_ACCOUNT);
+
     await app.start({
       SERVER_PORT: undefined,
       REST_API_USERNAME: TEST_USERNAME,
       REST_API_PASSWORD: TEST_PASSWORD,
     });
-
-    app.ibApiMock.managedAccounts.add(TEST_ACCOUNT);
 
     streamEndpointUrl = `ws://localhost:${app.apiServerPort}/realtime/stream`;
 
@@ -57,7 +60,7 @@ describe("Test Real-time accountSummaries", () => {
     app.stop();
   });
 
-  test("Subscribe on 'accountSummaries'", async () => {
+  test("Subscribe on 'accountSummary/'", async () => {
     return new Promise<void>((resolve, reject) => {
       const ws = new WebSocket(authenticatedStreamEndpointUrl);
       ws.onerror = err => {
@@ -133,10 +136,19 @@ describe("Test Real-time accountSummaries", () => {
 
             ws.send(
               JSON.stringify({
-                type: RealtimeDataMessageType.Subscribe,
-                topic: "accountSummary/",
+                type: RealtimeDataMessageType.Unsubscribe,
+                topic: "accountSummary/#",
               } as RealtimeDataMessage),
             );
+
+            setTimeout(() => {
+              ws.send(
+                JSON.stringify({
+                  type: RealtimeDataMessageType.Subscribe,
+                  topic: "accountSummary/",
+                } as RealtimeDataMessage),
+              );
+            }, 50)
             break;
           }
 
@@ -145,6 +157,7 @@ describe("Test Real-time accountSummaries", () => {
             expect(msg.error?.desc).toEqual(
               "invalid topic, account argument missing",
             );
+
 
             ws.send(
               JSON.stringify({
@@ -164,17 +177,16 @@ describe("Test Real-time accountSummaries", () => {
             expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
             expect(msg.data?.accountSummary?.netLiquidation).toEqual(TEST_NAV);
 
-            ws.send(
-              JSON.stringify({
-                type: RealtimeDataMessageType.Unsubscribe,
-                topic: "accountSummary/" + TEST_ACCOUNT,
-              } as RealtimeDataMessage),
-            );
+            TEST_TOTAL_CASH = Math.random();
 
-            // wait a little until Unsubscribe is executed
+            app.ibApiMock.accountSummaryUpdate.error({
+              error: {
+                message: "accountSummary Test Error",
+              },
+            });
+
             setTimeout(() => {
-              TEST_TOTAL_CASH = Math.random();
-
+              app.ibApiMock.accountSummaryUpdate = new ReplaySubject<AccountSummariesUpdate>(1);
               emitSummaryChange(
                 TEST_ACCOUNT,
                 new Map<string, AccountSummaryValues>([
@@ -192,7 +204,7 @@ describe("Test Real-time accountSummaries", () => {
                   ],
                 ]),
               );
-            }, 10);
+            }, 100);
 
             break;
           }
@@ -203,10 +215,21 @@ describe("Test Real-time accountSummaries", () => {
               TEST_TOTAL_CASH,
             );
 
-            app.ibApiMock.currentPnL.next({
-              realizedPnL: TEST_REALIZED_PNL,
-              unrealizedPnL: TEST_UNREALIZED_PNL,
+            app.ibApiMock.currentPnL.error({
+              error: {
+                message: "accountSummary Test Error",
+              },
             });
+
+            TEST_REALIZED_PNL = Math.random();
+            TEST_UNREALIZED_PNL = Math.random();
+
+            setTimeout(() => {
+              app.ibApiMock.currentPnL = new BehaviorSubject<PnL>({
+                realizedPnL: TEST_REALIZED_PNL,
+                unrealizedPnL: TEST_UNREALIZED_PNL,
+              });
+            }, 100);
 
             break;
           }
@@ -221,10 +244,38 @@ describe("Test Real-time accountSummaries", () => {
               TEST_UNREALIZED_PNL,
             );
 
+            TEST_TOTAL_CASH = Math.random()
+
+            emitSummaryChange(
+              TEST_ACCOUNT,
+              new Map<string, AccountSummaryValues>([
+                [
+                  "TotalCashValue",
+                  new Map<string, AccountSummaryValue>([
+                    [
+                      app.config.BASE_CURRENCY ?? "",
+                      {
+                        value: "" + TEST_TOTAL_CASH,
+                        ingressTm: Math.random(),
+                      },
+                    ],
+                  ]),
+                ],
+              ]),
+            );
+
+            break;
+          }
+
+          case 5: {
+            expect(msg.topic).toEqual("accountSummary/" + TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.account).toEqual(TEST_ACCOUNT);
+            expect(msg.data?.accountSummary?.totalCashValue).toEqual(TEST_TOTAL_CASH);
+
             ws.send(
               JSON.stringify({
                 type: RealtimeDataMessageType.Unsubscribe,
-                topic: "accountSummary/#",
+                topic: "accountSummary/" + TEST_ACCOUNT,
               } as RealtimeDataMessage),
             );
 

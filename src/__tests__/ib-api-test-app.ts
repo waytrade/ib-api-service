@@ -1,17 +1,36 @@
+import {IBApiNext} from '@stoqey/ib';
+import {DefaultMicroserviceComponentFactory} from '@waytrade/microservice-core';
 import {Subject} from "rxjs";
 import * as App from "../app";
 import {IBApiNextMock} from "./mock/ib-api-next.mock";
 
+const ibApiNetMock = new IBApiNextMock()
+
+class IBApiFactoryServiceMock {
+  get api(): Promise<IBApiNext> {
+    return new Promise<IBApiNext>(resolve => resolve(<unknown>ibApiNetMock as IBApiNext));
+  }
+}
+
+class MockComponentFactory extends DefaultMicroserviceComponentFactory {
+  create(type: unknown): unknown {
+    if ((<any>type).name === "IBApiFactoryService") {
+      return new IBApiFactoryServiceMock()
+    }
+    return super.create(type)
+  }
+}
+
 /** IBApiApp with mocked IBApiNext */
 export class IBApiApp extends App.IBApiApp {
-  constructor() {
-    super(IBApiNextMock);
+  constructor(mockIbApi = true) {
+    super(mockIbApi ? new MockComponentFactory() : new DefaultMicroserviceComponentFactory());
   }
 
   readonly appStopped = new Subject<void>();
 
   get ibApiMock(): IBApiNextMock {
-    return <IBApiNextMock>(<unknown>this.ibApi);
+    return ibApiNetMock
   }
 
   /** Stop the app. */
