@@ -91,8 +91,6 @@ export class ContractsController {
   async getContractDetailsById(
     req: MicroserviceRequest,
   ): Promise<ContractDetailsList> {
-    SecurityUtils.ensureAuthorization(req);
-
     // verify arguments
 
     const conId = Number(req.queryParams.conId);
