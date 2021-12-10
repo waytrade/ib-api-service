@@ -131,6 +131,7 @@ export class IBApiService {
                 connectionTries >= (this.app.config.IB_GATEWAY_RECONNECT_TRIES ?? 0)
               ) {
                 this.app.error("Lost connection to IB Gateway, shutown app...");
+                api.disconnect();
                 this.app.stop();
               }
               break;

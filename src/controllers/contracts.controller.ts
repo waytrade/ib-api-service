@@ -16,7 +16,6 @@ import {Contract} from "../models/contract.model";
 import {HistoricDataRequestArguments} from "../models/historic-data-request.model";
 import {OHLCBars} from "../models/ohlc-bar.model";
 import {IBApiService} from "../services/ib-api.service";
-import {SecurityUtils} from "../utils/security.utils";
 
 /** The contracts database controller. */
 @controller("Contracts", "/contracts")

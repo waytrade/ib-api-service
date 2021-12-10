@@ -1,4 +1,4 @@
-import {HttpStatus, MicroserviceRequest} from "@waytrade/microservice-core";
+import {HttpError, HttpStatus, MicroserviceRequest} from "@waytrade/microservice-core";
 import Cookie from "cookie";
 import {SecurityUtils} from "../../utils/security.utils";
 
@@ -34,8 +34,8 @@ describe("Test SecurityUtils", () => {
         headers,
       });
     } catch (e) {
-      expect(e.code).toEqual(HttpStatus.UNAUTHORIZED);
-      expect(e.message).toEqual("Missing authorization header");
+      expect((<HttpError>e).code).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<HttpError>e).message).toEqual("Missing authorization header");
       hasThrown = true;
     }
 
@@ -52,8 +52,8 @@ describe("Test SecurityUtils", () => {
         headers,
       });
     } catch (e) {
-      expect(e.code).toEqual(HttpStatus.UNAUTHORIZED);
-      expect(e.message).toEqual(
+      expect((<HttpError>e).code).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<HttpError>e).message).toEqual(
         "Invalid bearer token",
       );
       hasThrown = true;
@@ -72,8 +72,8 @@ describe("Test SecurityUtils", () => {
         headers,
       });
     } catch (e) {
-      expect(e.code).toEqual(HttpStatus.UNAUTHORIZED);
-      expect(e.message).toEqual("Invalid bearer token");
+      expect((<HttpError>e).code).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<HttpError>e).message).toEqual("Invalid bearer token");
       hasThrown = true;
     }
 

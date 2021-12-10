@@ -1,5 +1,5 @@
 import {HttpStatus} from "@waytrade/microservice-core";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import {IBApiApp} from "../ib-api-test-app";
 
 /**
@@ -48,8 +48,8 @@ describe("Test User Authentication", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
-      expect(e.response.data).toEqual({message: "Wrong username or password"});
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.data).toEqual({message: "Wrong username or password"});
     }
   });
 
@@ -61,7 +61,7 @@ describe("Test User Authentication", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
     }
   });
 });

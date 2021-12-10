@@ -1,6 +1,6 @@
 import {Bar, ContractDescription, ContractDetails, OptionType, SecType} from "@stoqey/ib";
 import {HttpStatus} from "@waytrade/microservice-core";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import {ContractDescriptionList} from '../../models/contract-description.model';
 import {ContractDetailsList} from "../../models/contract-details.model";
 import {BarSize, HistoricDataRequestArguments, WhatToShow} from '../../models/historic-data-request.model';
@@ -175,7 +175,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -208,8 +208,8 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
-      expect(e.response.data.message).toEqual("Missing pattern parameter on query");
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.data?.message).toEqual("Missing pattern parameter on query");
     }
   });
 
@@ -230,8 +230,8 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
-      expect(e.response.data.message).toEqual("TEST ERROR");
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect((<AxiosError>e).response?.data?.message).toEqual("TEST ERROR");
     }
   });
 
@@ -282,7 +282,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -312,7 +312,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
     }
   });
 
@@ -333,8 +333,8 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
-      expect(e.response.data.message).toEqual("TEST ERROR");
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect((<AxiosError>e).response?.data?.message).toEqual("TEST ERROR");
     }
   });
 
@@ -368,7 +368,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -409,8 +409,8 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
-      expect(e.response.data.message).toEqual("TEST ERROR");
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.data?.message).toEqual("TEST ERROR");
     }
   });
 
@@ -449,7 +449,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -469,7 +469,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
     }
   });
 
@@ -486,7 +486,7 @@ describe("Test Contracts Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.BAD_REQUEST);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.BAD_REQUEST);
     }
   });
 });

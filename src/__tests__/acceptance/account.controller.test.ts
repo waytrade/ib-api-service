@@ -1,6 +1,6 @@
 import {AccountSummaryTagValues, AccountSummaryValue, AccountSummaryValues, PnLSingle, Position} from '@stoqey/ib';
 import {HttpStatus} from "@waytrade/microservice-core";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import {BehaviorSubject} from 'rxjs';
 import {AccountList} from "../../models/account-list.model";
 import {
@@ -8,7 +8,7 @@ import {
   AccountSummaryList
 } from "../../models/account-summary.model";
 import {PositionList} from '../../models/position-list.model';
-import {delay} from "../helper/test.helper";
+import {wait_ms} from "../helper/test.helper";
 import {IBApiApp} from "../ib-api-test-app";
 
 describe("Test Account Controller", () => {
@@ -123,7 +123,7 @@ describe("Test Account Controller", () => {
       )
     ).headers["authorization"] as string;
 
-    await delay(100);
+    await wait_ms(100);
   });
 
   afterAll(async () => {
@@ -145,7 +145,7 @@ describe("Test Account Controller", () => {
       await axios.get<AccountList>(baseUrl + "/managedAccounts", {});
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -172,7 +172,7 @@ describe("Test Account Controller", () => {
       await axios.get<AccountList>(baseUrl + "/accountSummaries", {});
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
@@ -203,7 +203,7 @@ describe("Test Account Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.NOT_FOUND);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.NOT_FOUND);
     }
   });
 
@@ -215,7 +215,7 @@ describe("Test Account Controller", () => {
       );
       throw "This must fail";
     } catch (e) {
-      expect(e.response.status).toEqual(HttpStatus.UNAUTHORIZED);
+      expect((<AxiosError>e).response?.status).toEqual(HttpStatus.UNAUTHORIZED);
     }
   });
 
